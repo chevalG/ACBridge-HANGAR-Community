@@ -1,28 +1,28 @@
 {
   "cachetag": "cpython-314",
   "compileErrors": [],
-  "count": 1530,
+  "count": 1564,
   "invalidationMode": "CHECKED_HASH",
   "optimize": 0,
   "python": "3.14.3",
   "sources": [
     {
       "pyc": "hangar/__pycache__/__init__.cpython-314.pyc",
-      "pycSHA256": "31fd193a366739ab2b82f266de51a86d4b75ecbf9aa6ab1cd521ab4c0a101ca9",
+      "pycSHA256": "1512317cda10cfb9522e93e9e0d42223840a0958f917cf97b04e7ac070bf52b5",
       "source": "hangar/__init__.py",
-      "sourceSHA256": "28fb0b13dc52893fb59fd03185d1d98344baa0d21aa86e8c1179a2cade386a78"
+      "sourceSHA256": "0dcd45ab9ce33f7fe193ce2147d51e35534dee63bc8764a90bbb3338af60b15a"
     },
     {
       "pyc": "hangar/__pycache__/__main__.cpython-314.pyc",
-      "pycSHA256": "8c4ed4411220090f92ba0d63c10a7357d7f297ea6ad8bb7e00cae7164b4bda79",
+      "pycSHA256": "e413f9d5b7bc5ac6208d74152fdcffd4cf32d638d031147e4ef540464ce1ea0c",
       "source": "hangar/__main__.py",
-      "sourceSHA256": "199191246a198287d1e9639cb07a49ac5e28fa7f7d4bb6f16e132ac64e882cac"
+      "sourceSHA256": "4a5967b13fac621d5397bd935cc472cc09866a6b99bf2ca2f5a38e02cbf409c3"
     },
     {
       "pyc": "hangar/__pycache__/app.cpython-314.pyc",
-      "pycSHA256": "2279981255c1f6cc419fb41a40d293c2e9f2bc50ed1953e9aaa05ad93736a498",
+      "pycSHA256": "3d9a50cc7ed3c2a8000f82d58ad2136e23308dc960455a0fd34b7c624100476c",
       "source": "hangar/app.py",
-      "sourceSHA256": "28ae3a2b518b647b9b605043cc6ab7fd933ab0890cafbc16666d205f66ce6db5"
+      "sourceSHA256": "870f8760a4a93ce7ff8d48cea1fe39a95f6be84dd97cf7e8dbb8b840651a95f3"
     },
     {
       "pyc": "hangar/__pycache__/cache_policy.cpython-314.pyc",
@@ -31,16 +31,40 @@
       "sourceSHA256": "cff8943b86b8dd0a6ae650021a3d69f263162f0317cb476e24f1d5402e86e4d3"
     },
     {
+      "pyc": "hangar/__pycache__/capabilities.cpython-314.pyc",
+      "pycSHA256": "b8adeac5f644387d13d6b547fd84cdb2d23bd99a70b9754ed6cecca0b60c7223",
+      "source": "hangar/capabilities.py",
+      "sourceSHA256": "304d9d29ff4f995b108afc0b9ba7eeecc26923243303d9f03bf905f473a92138"
+    },
+    {
       "pyc": "hangar/__pycache__/clip_plan.cpython-314.pyc",
-      "pycSHA256": "14b42e1a1045b26f5098d249368880cbb89b75ad81d15c125a000756c42f8f0b",
+      "pycSHA256": "0270c082f16919113da03c937be5263efbcffd15240b32dc0bac85f4ab4e38f6",
       "source": "hangar/clip_plan.py",
-      "sourceSHA256": "a9fedb932fa2a0a404388bf7c04e59bedfda714c236b1056eb0487eec42282fc"
+      "sourceSHA256": "4d40601db27e1d0626d139f1bd65bf348971bdca0e9c224f6eee80f7274cce65"
+    },
+    {
+      "pyc": "hangar/__pycache__/dynamic_catalog.cpython-314.pyc",
+      "pycSHA256": "7062b38c7f8f3524b0da447214e1aaa60902dd0fbdbde3495c3f81f1f082d213",
+      "source": "hangar/dynamic_catalog.py",
+      "sourceSHA256": "324983dcacaa28f67fb1ca884a25d7ce32272fa38d2fcc6470c6ebc499a43a6f"
+    },
+    {
+      "pyc": "hangar/__pycache__/enemy_materials.cpython-314.pyc",
+      "pycSHA256": "28a25fe8ddb541704ec10c5df84f76652edb0b30b9253da81a2a5583e2e0d955",
+      "source": "hangar/enemy_materials.py",
+      "sourceSHA256": "51ccbfaf73d1c2019f883242f4964f7a54489b4587e0fce07804625777100ae1"
+    },
+    {
+      "pyc": "hangar/__pycache__/enemy_palette.cpython-314.pyc",
+      "pycSHA256": "2de3ce5993b0b2b337d075d3f771f9d7e5e03733dcd599c2ee289c55da571165",
+      "source": "hangar/enemy_palette.py",
+      "sourceSHA256": "93c3f7a79bc5367cc1b1beb028342c309c7b28a920d970d3bc927516a81ee5d0"
     },
     {
       "pyc": "hangar/__pycache__/engine.cpython-314.pyc",
-      "pycSHA256": "e6f35210e0e6223eb8c15d50f5d687b73b62b9133b0a7d7414569ecd5f55aef0",
+      "pycSHA256": "63d83a0698d14c3959ba303d121511323a735ba349b042028430b4e1c5debc5a",
       "source": "hangar/engine.py",
-      "sourceSHA256": "d43068b1ed167777a51b81c2b8059b9dbe43a91efbdc24177b60382ec8317c6c"
+      "sourceSHA256": "75fc4970683a1f72e5a43889bddfc664d60b2fb0cb47b847582433409bf37998"
     },
     {
       "pyc": "hangar/__pycache__/errors.cpython-314.pyc",
@@ -49,10 +73,34 @@
       "sourceSHA256": "629ba33166dad78ce81e168a26cdfb98c777a98464155903efa2952662ecbd13"
     },
     {
+      "pyc": "hangar/__pycache__/features.cpython-314.pyc",
+      "pycSHA256": "1e8da0b2b6449329cd8e5eedd13f6fe346b5ad82b7dcbbefd4da8c6f3abe1439",
+      "source": "hangar/features.py",
+      "sourceSHA256": "3bc17028c9e141b8b6e8c7fdb2391e7cc42aafd1c2b9439578198785e9110a12"
+    },
+    {
+      "pyc": "hangar/__pycache__/fxr_playback.cpython-314.pyc",
+      "pycSHA256": "f19f77edb3c75a9ca5ffca7a6002d7f4d8f0498f6d423f84035efc6d0a764453",
+      "source": "hangar/fxr_playback.py",
+      "sourceSHA256": "761a49e500018db171109db6669216c34158aed42376372377afd0a0af4c1bc7"
+    },
+    {
+      "pyc": "hangar/__pycache__/fxr_resources.cpython-314.pyc",
+      "pycSHA256": "e71a62d7f3c29eebc26b27e3502649840d6e11130d9691e9747f20a9e50bb1fd",
+      "source": "hangar/fxr_resources.py",
+      "sourceSHA256": "a94c83b0ee6073f019d79ba0547224cd0c44fc14b8ffd1863e15901cc81d4a52"
+    },
+    {
       "pyc": "hangar/__pycache__/glb.cpython-314.pyc",
-      "pycSHA256": "e6f8fdd58ae74e2cf84c09bdfc4c563804c5dbd9a4fae844f1b558f4aa99f52e",
+      "pycSHA256": "5a6953ea3a126aa20b7571b3ef9c2d24e997e9b4c70e6639cd220776cb92a6cd",
       "source": "hangar/glb.py",
-      "sourceSHA256": "8c997d906ce6f29ae05df40613752b92341acfee10a63d17ab7691e32f2df515"
+      "sourceSHA256": "e777e5e9f43bf4113c8ae6929d5a6899cb94e4b961473f17a0eea74629d85be4"
+    },
+    {
+      "pyc": "hangar/__pycache__/identities.cpython-314.pyc",
+      "pycSHA256": "80c7e9148c12c1a8320bb9d2dc78ec6d8a2d618e65c60ff85fd3bdfda3de784e",
+      "source": "hangar/identities.py",
+      "sourceSHA256": "f30aa41510ae2555f8b7168a70f851dc91796abb81ac4cafdf0cc201e6cb15b3"
     },
     {
       "pyc": "hangar/__pycache__/jobs.cpython-314.pyc",
@@ -62,15 +110,57 @@
     },
     {
       "pyc": "hangar/__pycache__/library.cpython-314.pyc",
-      "pycSHA256": "abe18b57359006722dfc6c0d5bc67eea5294923751ab9cfc58cf7213b330af03",
+      "pycSHA256": "c05495cc1cdc7bedbbb04c86036b3a8f38e2cacb031802431934f12261ebfbb0",
       "source": "hangar/library.py",
-      "sourceSHA256": "67bffef4b5de65617191023f759beac5858187a63e430504b7a7f67263862c49"
+      "sourceSHA256": "9cc8833c3d2a0e8f8657f0887f3746506ced1c2c6e161c91bb040d9fee417736"
+    },
+    {
+      "pyc": "hangar/__pycache__/material_jobs.cpython-314.pyc",
+      "pycSHA256": "0d9e06400923cc05c18a8efdd699cdab3bbe39b536a1d36b2441a3731387544f",
+      "source": "hangar/material_jobs.py",
+      "sourceSHA256": "bd4d506bdad5ff7b3ab4333006ab6d9c4943e4cc09388083db89d58f7af08418"
+    },
+    {
+      "pyc": "hangar/__pycache__/materials.cpython-314.pyc",
+      "pycSHA256": "966126e8b4bc827bc31e47c91bc0b550f12332adcf5c0c1683eaa04a586cc7c6",
+      "source": "hangar/materials.py",
+      "sourceSHA256": "a02155466722f2d0f29d14e0a46073a065f57c14d710bbe28ca89a131fe1897b"
+    },
+    {
+      "pyc": "hangar/__pycache__/motion_audit.cpython-314.pyc",
+      "pycSHA256": "2fcaea0ec92631ab3d70369635c53f3b400795b255075339fbbabc93a9fca932",
+      "source": "hangar/motion_audit.py",
+      "sourceSHA256": "79ea1e91c7a806b8ec9b1511c6994a5b5a4a12cbc6787ea376421ec8b443bde9"
+    },
+    {
+      "pyc": "hangar/__pycache__/motion_cache.cpython-314.pyc",
+      "pycSHA256": "7f7bfa1bda7246e2df664fb86c51da48d361fdac0b3910af40e434e8b38e82ff",
+      "source": "hangar/motion_cache.py",
+      "sourceSHA256": "383674e61393a6f548bea8e16bd53f955c51e84f9ca4830483711ebe5b2c3351"
+    },
+    {
+      "pyc": "hangar/__pycache__/motion_policy.cpython-314.pyc",
+      "pycSHA256": "98c25fa178897d797d88837069e16d209d1e760cf8913baba443c0965ecf9427",
+      "source": "hangar/motion_policy.py",
+      "sourceSHA256": "11d10472599d16cf6807c14850cfb4529f943fca5461b771f19d4e0135b55d61"
     },
     {
       "pyc": "hangar/__pycache__/mount_asset.cpython-314.pyc",
-      "pycSHA256": "8027fdb5c0d97b5a813acf1acfd1a21d825b4a55ddea1ce6febefa256e8bf73e",
+      "pycSHA256": "35d86a742650a479a7b83d4340dc22dd79e77f95d0da53cd3e8e3ae6652778c1",
       "source": "hangar/mount_asset.py",
-      "sourceSHA256": "55a0b554da3bac54af8399dfa5e28626c7ad63e4465d47d0a18d5da180dc283f"
+      "sourceSHA256": "7f7440b6f4480490251bc7f05d420a75ac8f86b24c72286df4790e83f83070e1"
+    },
+    {
+      "pyc": "hangar/__pycache__/native_animation.cpython-314.pyc",
+      "pycSHA256": "c6d6e66d5aa216f93c8534f14769fda4a691159a8cbbf0fce4ed9da18b8743fe",
+      "source": "hangar/native_animation.py",
+      "sourceSHA256": "827a9fd154c40d556e16fabb6e27e8cc68be51d80428f17f2482da7405b768dd"
+    },
+    {
+      "pyc": "hangar/__pycache__/native_binding.cpython-314.pyc",
+      "pycSHA256": "aa3ef446e24fab9d3e0d605367a658d56006124876d4d108d2c437fa9b664101",
+      "source": "hangar/native_binding.py",
+      "sourceSHA256": "8affdaa5a718ae82a585ce5d9d3c2419f1fc2a93c47ea1059969810a4233e2fa"
     },
     {
       "pyc": "hangar/__pycache__/player_inputs.cpython-314.pyc",
@@ -79,22 +169,136 @@
       "sourceSHA256": "a5bf5a889e9ece8981b8c7eb406f78ce32b068a0845aad5b61576b5c945c10e9"
     },
     {
+      "pyc": "hangar/__pycache__/player_motion.cpython-314.pyc",
+      "pycSHA256": "a4cf02cdae00c752cea0dc004f0e4bd7d9d908dc688ed91acd65ea63a9b8a8d8",
+      "source": "hangar/player_motion.py",
+      "sourceSHA256": "34e4f2e64cc64f781e829722ed9460def489ec13b37bb4aab3703cc15aba2665"
+    },
+    {
+      "pyc": "hangar/__pycache__/profile.cpython-314.pyc",
+      "pycSHA256": "2e6c89ec302761a686e4a58fdcf63010bf5fe6453f6539039bd8098ca05d9c21",
+      "source": "hangar/profile.py",
+      "sourceSHA256": "932fbacfdac09299e8645ac5ec3cb1e55abe25d49074b90c07562bdc5927e8c5"
+    },
+    {
+      "pyc": "hangar/__pycache__/resource_research.cpython-314.pyc",
+      "pycSHA256": "e14624da943a27ef34ddb1455fdf4c59026a726ca13974ab2dcaa59ee3333f93",
+      "source": "hangar/resource_research.py",
+      "sourceSHA256": "0ab1b8c4e313f4f030fd4f79ca3760c76e995b23f61baca1daead77ff89c9d2b"
+    },
+    {
+      "pyc": "hangar/__pycache__/sea_spider_research.cpython-314.pyc",
+      "pycSHA256": "f4c1f182bb4fd897c1a546f2ded8864866c97c14e3cffcdfa17e7ee9a02bcde4",
+      "source": "hangar/sea_spider_research.py",
+      "sourceSHA256": "bee0b97f9ad44e11babc02ef754736bca4aad931c81d4537dcfa4b359556a0d5"
+    },
+    {
       "pyc": "hangar/__pycache__/server.cpython-314.pyc",
-      "pycSHA256": "20a9de9305acc357351b95c0ef35b4ccc35e8d25fb8da5eb37f45081e4780715",
+      "pycSHA256": "123296f33bba18354088609409922f941d66b8c8abc8339254ff57a2d789bfa1",
       "source": "hangar/server.py",
-      "sourceSHA256": "1b072ea4ccdf390594e629d203ffb84fa520f62fc023a0a775c7b2e4578301a1"
+      "sourceSHA256": "57b147745ae2afdcbfcddf55278b0066502a1a8b7d5557e977616800751ccffd"
+    },
+    {
+      "pyc": "hangar/__pycache__/source_alpha.cpython-314.pyc",
+      "pycSHA256": "c144c63b2ed7577082ac20909ee58137c10385bea976632c54bcb080bb1c1323",
+      "source": "hangar/source_alpha.py",
+      "sourceSHA256": "7a487c37c27c05f5a423f75d87b96801d44bf9abc1696e429512027ca2fe0616"
+    },
+    {
+      "pyc": "hangar/__pycache__/source_compound.cpython-314.pyc",
+      "pycSHA256": "1bc24b28c4928ea4a9b2d8cc6b2c7d813ce378c225925c8a6fc2a4477b71f1d4",
+      "source": "hangar/source_compound.py",
+      "sourceSHA256": "d618d9969c613bd3ef0ddce1bd25b90e17166415e32b669bb2e7e1cd13690505"
+    },
+    {
+      "pyc": "hangar/__pycache__/source_custom.cpython-314.pyc",
+      "pycSHA256": "44fcd281fd4d9107755549e92c13d352b435a44d7515962d23aa9ae00370cad4",
+      "source": "hangar/source_custom.py",
+      "sourceSHA256": "15a10d0d422c97a4f92b4fd89dc8a6870c7e3683ad83dae2e14d1ddd128cc40f"
+    },
+    {
+      "pyc": "hangar/__pycache__/source_edge.cpython-314.pyc",
+      "pycSHA256": "987c373f614a2bb0c89e366019f2ccc35ac6a5cacf698161de6ce373ad3bf711",
+      "source": "hangar/source_edge.py",
+      "sourceSHA256": "f6ad65ae7dd9d7a822a7af8a305daf5e37085b55221fe5e0b96c7429fc7a86cd"
+    },
+    {
+      "pyc": "hangar/__pycache__/source_layers.cpython-314.pyc",
+      "pycSHA256": "11e5130d2b377c11a6500224674a95e38ee97b6500e44a3d4b3489af14ca9656",
+      "source": "hangar/source_layers.py",
+      "sourceSHA256": "7873ca88fbd570e6c4609d2ed998e8b8644061a70cf55e1d05513b60bb845dd7"
+    },
+    {
+      "pyc": "hangar/__pycache__/source_mask.cpython-314.pyc",
+      "pycSHA256": "c0b51d1dcacd22ffbc07fe357e82ebabacbc8395afae0275ac78e53f9befe892",
+      "source": "hangar/source_mask.py",
+      "sourceSHA256": "b06c5fcccd47fa2405cc5dc3b40051fe1d9d4d8f7e41ea72e01eeec069d09615"
+    },
+    {
+      "pyc": "hangar/__pycache__/source_ms.cpython-314.pyc",
+      "pycSHA256": "5dbfffb6dab05d49c86e670e13003074fca998bb927dabd0ba79e08dc54fb495",
+      "source": "hangar/source_ms.py",
+      "sourceSHA256": "5e24b9296d3c36e221ad34cda584b3089bb47c2a50a519096a5362a20cc1ce34"
+    },
+    {
+      "pyc": "hangar/__pycache__/source_normals.cpython-314.pyc",
+      "pycSHA256": "16bc86d8b05fb6db0098de415846fc33afcfcd2ce0a03ee2d553b0ef5068cd6a",
+      "source": "hangar/source_normals.py",
+      "sourceSHA256": "00800aa2cdecd51ae954563084144045b79025979be1f0bbe24569df119081af"
+    },
+    {
+      "pyc": "hangar/__pycache__/source_player_glow.cpython-314.pyc",
+      "pycSHA256": "ef8aa02f894f96fe002d28ec1e4e0d43f8d2b9ce3ef3dd30ae57e185de7ff3fa",
+      "source": "hangar/source_player_glow.py",
+      "sourceSHA256": "4f12f47d9ee51dc485721e5614a51472108ad1ebe8295abb50b8f00006c15f1a"
+    },
+    {
+      "pyc": "hangar/__pycache__/source_player_material.cpython-314.pyc",
+      "pycSHA256": "b80572c1893383fec7415381168289ad40de4ea56791ec6ddebcb1ac4227ed6c",
+      "source": "hangar/source_player_material.py",
+      "sourceSHA256": "6d6d4d28a99ddd9207090f8bbaf99b52cfb1aa42129565f4a4041f31a297ed0c"
+    },
+    {
+      "pyc": "hangar/__pycache__/source_surface.cpython-314.pyc",
+      "pycSHA256": "22053dbacf411b402132710e3e19394b048cc3cc5b1f95b258ce2c24c2f96534",
+      "source": "hangar/source_surface.py",
+      "sourceSHA256": "c3257e200b90b56c5b6a6c57b2ab4ccf29d74ae651729b8ee46c748265acfeb8"
+    },
+    {
+      "pyc": "hangar/__pycache__/spline_rotation_research.cpython-314.pyc",
+      "pycSHA256": "f12948257ed67438a9736d4ffe65b3edfb513c40472b0a95a2d344afd0f724ad",
+      "source": "hangar/spline_rotation_research.py",
+      "sourceSHA256": "469806804daed70210c79cd18c36cc2502e76d96537f4b7962aaa2defa2b20cb"
     },
     {
       "pyc": "hangar/__pycache__/static_asset.cpython-314.pyc",
-      "pycSHA256": "c1d2af521a51cca3cca96ed5e8d144d02d9fbc3ba6206d9c970cc89c594f68cb",
+      "pycSHA256": "0afd98fee1781032bd1ae4b28f7a72214a249288373819de361a214a30b100c3",
       "source": "hangar/static_asset.py",
-      "sourceSHA256": "eae603488b3dfaec76cedf74a138e26acbce763a0a108e34f7e7810d2960900e"
+      "sourceSHA256": "7f505ce604493e8eee1dbc9f994a36deb450073d3f88cad8f4a98e2eec138409"
     },
     {
       "pyc": "hangar/__pycache__/store.cpython-314.pyc",
-      "pycSHA256": "863a105942f3ba35598a6a54da1723364d69e6d5ab5973af0986c620ddc671c8",
+      "pycSHA256": "a2f8aad1240492d8c62faebe96157aa7d8cb7031124717977bdf85fc102a2cdf",
       "source": "hangar/store.py",
-      "sourceSHA256": "16bce304dc7330493d324ffc69872acd77a9d896ac901db7f0e45e7b771ff670"
+      "sourceSHA256": "a5d3af53c7c42679fbea23dbab75b695064b78adff81f2bf95ca1f5c93511953"
+    },
+    {
+      "pyc": "hangar/__pycache__/tae_catalog.cpython-314.pyc",
+      "pycSHA256": "d27838ab4b8481482428cf45c807fe007d317adc285f0844e54e3fdb0468e08e",
+      "source": "hangar/tae_catalog.py",
+      "sourceSHA256": "97aa86ccd4c3fceb44323e139cc349bacead37c866715a74d66d7b4b259a5e73"
+    },
+    {
+      "pyc": "hangar/__pycache__/texture_budget.cpython-314.pyc",
+      "pycSHA256": "b40f50f4c9eac82ba4b9a9f87da472d42570ff54824bbf7f09f01a26565aaa04",
+      "source": "hangar/texture_budget.py",
+      "sourceSHA256": "61ceb19888240ed4d337263090b4ffe48519ba2c2231ac43055a71be9988bfec"
+    },
+    {
+      "pyc": "hangar/__pycache__/toolchain.cpython-314.pyc",
+      "pycSHA256": "451d25a2e3b8930e82e5898913c36ba9d65e12fc551fbf075617b4c5743583f9",
+      "source": "hangar/toolchain.py",
+      "sourceSHA256": "baa07727d9d0ffa7db26623a3d8d604fdc45281a8ce6493e091357f4206edf6a"
     },
     {
       "pyc": "hangar/__pycache__/util.cpython-314.pyc",
@@ -104,9 +308,9 @@
     },
     {
       "pyc": "hangar/__pycache__/worker.cpython-314.pyc",
-      "pycSHA256": "043df4437cf1a3b95f9e32b9a46278d084db6b5757a8c0690f035640a9374b42",
+      "pycSHA256": "478d479da870069aab2604c94512b5f815ab656868d6652d70b64909333d2bbd",
       "source": "hangar/worker.py",
-      "sourceSHA256": "dd317c95c43c19eb4548927a42742ad1b068bf5b2cae84e2b78b743407a3cde3"
+      "sourceSHA256": "7d9092e2613e43b444647b1469e8d9d0a2f7e26e30f1a32f735d94a5ae1a8421"
     },
     {
       "pyc": "runtime/Lib/__pycache__/__future__.cpython-314.pyc",
@@ -3458,9 +3662,9 @@
     },
     {
       "pyc": "runtime/Lib/site-packages/acbridge/__pycache__/dynamic_worker.cpython-314.pyc",
-      "pycSHA256": "19de299caefa28cfdce43e8665531de38fe1bd4dd8a153796115692a2c5c7223",
+      "pycSHA256": "02a3149f4bcd620bb5c6861ad1fc6d118374a9ee0e1255dfe7dcd0513c44508f",
       "source": "runtime/Lib/site-packages/acbridge/dynamic_worker.py",
-      "sourceSHA256": "40dbe0d3f044d56054300a41f649a9e9ced5132f447dad47ac68299f3095a228"
+      "sourceSHA256": "927ba5f73757003267d8ae40d64345f3f67a4f85968c7d2e56f4e13476a3a823"
     },
     {
       "pyc": "runtime/Lib/site-packages/acbridge/__pycache__/fast_math.cpython-314.pyc",

@@ -6,6 +6,10 @@
 import { api } from './api.js';
 import { jobPercent } from './dom.js';
 
+const escapeText = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+})[ch]);
+
 export class ResourceWizard {
   constructor(modalId, options = {}) {
     this.modal = document.getElementById(modalId);
@@ -15,6 +19,9 @@ export class ResourceWizard {
 
     this.onImportComplete = options.onImportComplete || null;
     this.isImporting = false;
+    this.isInstalling = false;
+    this.installMessage = '';
+    this.toolchainInfo = null;
     this.gameModeInfo = null;
 
     this._renderBaseLayout();
@@ -48,6 +55,26 @@ export class ResourceWizard {
               </label>
             </div>
             <span id="import-mode-hint" class="form-hint">已解包或展开的 parts/clips 目录无需重复解包，可最快建立索引与装配关系。</span>
+          </div>
+
+          <div id="toolchain-panel" class="toolchain-panel" hidden>
+            <div class="toolchain-head">
+              <span class="toolchain-title">AC6 解包组件</span>
+              <span id="toolchain-state" class="toolchain-state">检测中…</span>
+            </div>
+            <div id="toolchain-detail" class="toolchain-detail"></div>
+            <div class="toolchain-actions">
+              <button id="btn-install-toolchain" class="btn-cyan" type="button">
+                一键安装缺失组件
+              </button>
+              <button id="btn-pick-witchy" class="btn-icon" type="button">
+                选择已有 WitchyBND
+              </button>
+              <button id="btn-refresh-toolchain" class="btn-icon" type="button">
+                重新检测
+              </button>
+            </div>
+            <div id="toolchain-progress" class="form-hint" hidden></div>
           </div>
 
           <div class="form-group">
@@ -124,6 +151,29 @@ export class ResourceWizard {
       api.getState().then(state => { inputPath.value = (state.settings?.roots || []).join('; '); });
     });
 
+    this.modal.querySelector('#btn-install-toolchain')?.addEventListener('click', () => {
+      this._installToolchain();
+    });
+    this.modal.querySelector('#btn-refresh-toolchain')?.addEventListener('click', () => {
+      this._syncCapabilities({ force: true });
+    });
+    this.modal.querySelector('#btn-pick-witchy')?.addEventListener('click', async () => {
+      let path = '';
+      if (api.isConnected) {
+        try {
+          const res = await api.openDialog('folder');
+          path = res?.path || '';
+        } catch (_) { /* manual entry below */ }
+      }
+      if (!path) {
+        path = prompt('请输入 WitchyBND.exe 或所在文件夹的完整路径：') || '';
+      }
+      if (path.trim()) {
+        this._witchyPath = path.trim();
+        this._installToolchain(this._witchyPath);
+      }
+    });
+
     // 浏览本地文件夹
     const btnBrowse = this.modal.querySelector('#btn-browse-folder');
     btnBrowse.addEventListener('click', async () => {
@@ -187,17 +237,21 @@ export class ResourceWizard {
     this.modal.classList.remove('open');
   }
 
-  async _syncCapabilities() {
+  async _syncCapabilities(options = {}) {
     try {
       const state = await api.getState();
       this.gameModeInfo = state?.onboarding?.game_mode || null;
+      this.toolchainInfo = state?.onboarding?.toolchain
+        || (await api.getToolchain().catch(() => null));
     } catch (_) {
       this.gameModeInfo = null;
+      this.toolchainInfo = null;
     }
     const gameRadio = this.modal.querySelector('input[name="import-mode"][value="game"]');
     const expRadio = this.modal.querySelector('input[name="import-mode"][value="expanded"]');
     const gameText = this.modal.querySelector('#text-import-mode-game');
     const gameLabel = this.modal.querySelector('#label-import-mode-game');
+    this._renderToolchain();
     if (!gameRadio || !expRadio) return;
     const supported = Boolean(this.gameModeInfo?.supported);
     gameRadio.disabled = !supported;
@@ -214,6 +268,65 @@ export class ResourceWizard {
       gameLabel.title = this.gameModeInfo?.reason || '';
     }
     this._updateModeHint();
+  }
+
+  _renderToolchain() {
+    const panel = this.modal.querySelector('#toolchain-panel');
+    if (!panel) return;
+    const info = this.toolchainInfo || {};
+    const ready = Boolean(info.ready);
+    const missing = info.missing || [];
+    panel.hidden = false;
+    panel.classList.toggle('is-ready', ready);
+    const state = this.modal.querySelector('#toolchain-state');
+    if (state) {
+      state.textContent = ready ? '已就绪' : `缺少 ${missing.length} 项`;
+      state.classList.toggle('is-ready', ready);
+    }
+    const detail = this.modal.querySelector('#toolchain-detail');
+    if (detail) {
+      const dotnet = info.dotnet || {};
+      detail.innerHTML = ready
+        ? '<span>NuxeBridge / Nuxe 索引 / .NET 10 / WitchyBND 均已检测到。</span>'
+        : `<span>${missing.map(item => `<b>${escapeText(item)}</b>`).join(' · ')}</span>
+           <span>${dotnet.desktop_10 ? '运行时版本：' + escapeText(dotnet.version || '') : '未检测到 .NET 10 Desktop Runtime'}</span>`;
+    }
+    const install = this.modal.querySelector('#btn-install-toolchain');
+    if (install) {
+      install.hidden = ready;
+      install.disabled = this.isInstalling;
+      install.textContent = this.isInstalling ? '正在安装…' : '一键安装缺失组件';
+    }
+    const progress = this.modal.querySelector('#toolchain-progress');
+    if (progress) {
+      progress.hidden = !this.isInstalling;
+      if (this.isInstalling && this.installMessage) progress.textContent = this.installMessage;
+    }
+  }
+
+  async _installToolchain(witchyPath = '') {
+    if (this.isInstalling) return;
+    this.isInstalling = true;
+    this.installMessage = '正在准备安装…';
+    this._renderToolchain();
+    try {
+      if (!api.isConnected) await api.getHealth();
+      if (!api.isConnected) throw new Error('本地服务未连接，无法安装依赖。');
+      const submitted = await api.installToolchain(witchyPath ? { witchy_path: witchyPath } : {});
+      await api.pollJob(submitted.id, job => {
+        this.installMessage = `${job.message || job.stage || '安装中…'}`;
+        this._renderToolchain();
+      });
+      this.installMessage = '安装完成，正在重新检测…';
+      await this._syncCapabilities({ force: true });
+      this._renderToolchain();
+    } catch (err) {
+      this.installMessage = `安装失败：${err.message}`;
+      this._renderToolchain();
+    } finally {
+      this.isInstalling = false;
+      this._renderToolchain();
+    }
   }
 
   _updateModeHint() {

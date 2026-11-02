@@ -7,6 +7,11 @@ pip/
 __pycache__/
 *.pyc
 web/vendor/
+launcher/build/
+launcher/HANGAR.ico
+release/launcher/
+*.nupkg
+assets/preview-*.png
 third_party/nuxebridge/bin/
 third_party/nuxebridge/obj/
 # Original/extracted game assets and generated model files stay local even if

@@ -1,4 +1,4 @@
-# ACBridge HANGAR 3.1.1
+# ACBridge HANGAR 3.1.2
 
 ACBridge HANGAR is a local Windows studio for browsing and inspecting mechs,
 parts and weapons from a legally installed copy of *ARMORED CORE VI FIRES OF
@@ -12,16 +12,15 @@ ACBridge HANGAR 是一个面向《装甲核心 VI：境界天火》的本地机�
 
 ## Download and first run / 下载与首次运行
 
-1. Download and fully extract `ACBridge-HANGAR-H24-r6-Windows-x64.zip`.
-2. Run `INSTALL-GAME-TOOLS.cmd`. The assistant checks the bundled Nuxe stack,
-   installs nothing silently, obtains WitchyBND from its official GitHub release
-   only with consent, and verifies the pinned SHA-256.
-3. If `Microsoft .NET 10 Desktop Runtime` is missing, install it from Microsoft,
-   then run `INSTALL-GAME-TOOLS.cmd` again.
-4. Run `START.cmd` and choose **Game Root**. Select either the AC6 installation
-   folder or its `Game` subfolder.
-5. After extraction finishes, browse the collection and use **Build** for the
-   player's HD/BD/AM/LG assembly.
+1. Download and fully extract `ACBridge-HANGAR-H24-r11-Windows-x64.zip`.
+2. Double-click `HANGAR.exe`. No command prompt is required.
+3. If the import wizard reports missing game tools, use **一键安装缺失组件**.
+   It reuses the bundled Nuxe stack, obtains WitchyBND from its official GitHub
+   release, verifies the pinned SHA-256, and rechecks .NET 10 Desktop Runtime.
+4. Choose **Game Root** and select either the AC6 installation folder or its
+   `Game` subfolder. **Expanded** remains available without those tools.
+5. Closing the HANGAR window stops the service and child processes started by
+   that window.
 
 已展开资源仍可直接使用 **Expanded** 模式，无需再次解包。Game Root 首次导入会生成
 HANGAR 自己的缓存；不会修改游戏安装、原版分卷或用户已有资源。
@@ -30,6 +29,8 @@ HANGAR 自己的缓存；不会修改游戏安装、原版分卷或用户已有�
 
 - Windows x64 portable HANGAR runtime and viewer.
 - GPL-compatible Nuxe 1.2.1 components and ACBridge's NuxeBridge adapter.
+- A native Windows desktop shell with the NIGHTFALL HANGAR icon and WebView2
+  window.
 - Apache-2.0 BinderKeys AC6 index data.
 - License texts, corresponding-source locations and rebuild information.
 - No FromSoftware models, textures, animations, FXR, game archives, regulation
@@ -56,8 +57,8 @@ upstream author only when the user runs the setup assistant. See
 ## Known limits / 已知限制
 
 - See [known limitations](docs/KNOWN-LIMITATIONS.md), the
-  [acceptance record](docs/ACCEPTANCE-3.1.1.md), and the
-  [performance summary](docs/PERFORMANCE-3.1.1.md).
+  [acceptance record](docs/ACCEPTANCE-3.1.2.md), and the
+  [performance summary](docs/PERFORMANCE-3.1.2.md).
 - GPL FXR and laser-blade experiments are hidden in normal builds. The GLB does
   not contain the experimental FXR runtime.
 - Shader and material reconstruction remains partial; recovered appearance is

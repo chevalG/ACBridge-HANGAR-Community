@@ -200,10 +200,14 @@ def build(folder, archive, *, app_version='3.1.0', project_release='H23 stable',
             shutil.copy2(source, target)
         for relative in app_files:
             source, target = ROOT / relative, stage / relative
-            if not source.is_file():
-                raise SystemExit(f'Missing H23 release file: {relative}')
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, target)
+            if source.is_dir():
+                copy_plain_tree(source, target,
+                                ignore_patterns=('__pycache__', '*.pyc', '*.pyo', '*.map'))
+            elif source.is_file():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, target)
+            else:
+                raise SystemExit(f'Missing release file: {relative}')
         marker = {
             'schema_version': 1,
             'product': 'ACBridge HANGAR',

@@ -1,12 +1,12 @@
 # Third-party notices
 
-The HANGAR 3.1.1 Windows package consists of ACBridge work plus the components
+The HANGAR 3.1.2 Windows package consists of ACBridge work plus the components
 listed here. Exact upstream repository revisions and license identities were
 reviewed for the public release.
 
 | Component | Version / revision | License | Distribution and source |
 |---|---|---|---|
-| ACBridge HANGAR and ACBridge Toolkit overlay | 3.1.1 / `ed257be4a64b98e2baea4fcd190075871b2e8cf7` baseline | GPL-3.0-only | Public HANGAR source repository and matching source release |
+| ACBridge HANGAR and ACBridge Toolkit overlay | 3.1.2 / public `v3.1.2` source | GPL-3.0-only | Public HANGAR source repository and matching source release |
 | ACBridge Toolkit frozen base | 0.5.1a5 | GPL-3.0-only | `licenses/acbridge_toolkit-0.5.1a5.tar.gz` |
 | NuxeBridge | 1.0.0 | GPL-3.0-only | `third_party/nuxebridge` in public source and source release |
 | Nuxe | 1.2.1, `16d94fcd379f45721047a0c2b7b743e84b4fa08b` | GPL-3.0-or-later | Bundled runtime; source linked from the public source manifest |
@@ -23,9 +23,20 @@ reviewed for the public release.
 | Node.js | 24.14.0 | MIT and bundled third-party notices | `licenses/Node-LICENSE.txt` |
 | Three.js | 0.180.0 | MIT | `web/vendor/three/LICENSE` |
 | Khronos glTF Validator | packaged version | Apache-2.0 | `licenses/gltf-validator-*` |
+| Microsoft WebView2 SDK / WebView2Loader | 1.0.4314.35 | Microsoft WebView2 SDK license (BSD-style) | `licenses/WebView2-SDK-LICENSE.txt`; runtime is supplied by the installed Microsoft Edge WebView2 Runtime |
 
 WitchyBND is not part of the distribution. The optional setup assistant points
 to the official upstream release `3.0.1.0`, verifies the Windows archive hash
 `a3e6b2a0f7eac13f5e83b6602a1149322439c0662baa140ecdd84be28af50364`,
 and lets the user place it in HANGAR's runtime tool directory. Users are
 responsible for reviewing the upstream distribution and its Oodle terms.
+
+## HANGAR desktop artwork
+
+The HANGAR desktop icon is derived from the in-game emblem artwork
+`MENU_Decal_00000044` supplied by the project owner. It is not a claim of
+ownership over FromSoftware/Bandai Namco artwork, and it is not included as a
+replacement for game files. The emblem is used only as the application icon;
+users remain responsible for the rights attached to any game-derived artwork in
+their jurisdiction. The source repository records the supplied image and the
+cropped application icon so the artwork's provenance is auditable.

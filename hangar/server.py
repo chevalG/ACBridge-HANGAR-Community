@@ -308,6 +308,14 @@ class HangarHandler(BaseHTTPRequestHandler):
             self._require(method, ('GET', 'HEAD'))
             self._send_json(200, app.state())
             return
+        if path == '/api/toolchain':
+            self._require(method, ('GET', 'HEAD'))
+            self._send_json(200, app.toolchain_status())
+            return
+        if path == '/api/toolchain/install':
+            self._require(method, ('POST',))
+            self._send_json(202, app.start_toolchain_install(self._read_json()))
+            return
         if path == '/api/jobs':
             self._require(method, ('GET', 'HEAD'))
             self._send_json(200, {'jobs': app.jobs.summaries(50)})

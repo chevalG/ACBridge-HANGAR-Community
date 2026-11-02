@@ -197,6 +197,8 @@ class App:
         self.jobs = JobManager(self.data_dir / 'jobs')
         from .library import AssetLibrary
         self.library = AssetLibrary(self)
+        from .toolchain import ToolchainInstaller
+        self.toolchain = ToolchainInstaller(self)
         self.identities = IdentityStore(self.data_dir, self.library.resource_rows)
         self._lock = threading.RLock()
         self._export_lock = threading.Lock()
@@ -302,7 +304,7 @@ class App:
         last_config = settings.get('last_config')
         missing = self._missing_parts(last_config, catalog)
         engine = self.engine.probe()
-        toolchain = engine.get('game_toolchain') or self.engine.game_toolchain()
+        toolchain = self.toolchain.status()
         game_ready = bool(engine.get('game_mode_ready'))
         game_mode_state = copy.deepcopy(GAME_MODE_INFO)
         game_mode_state['supported'] = game_ready
@@ -342,6 +344,7 @@ class App:
                 'game_mode': game_mode_state,
                 'engine_ready': bool(engine.get('ready')),
                 'missing_requirements': self._missing_requirements(engine),
+                'toolchain': toolchain,
             },
             'capabilities': {
                 'build': True,
@@ -1845,6 +1848,13 @@ class App:
             resolved = (Path.cwd() / resolved).resolve()
         return {'path': str(resolved), 'cancelled': False}
 
+    # ------------------------------------------------------------ toolchain
+    def toolchain_status(self):
+        return self.toolchain.status()
+
+    def start_toolchain_install(self, payload=None):
+        return self.toolchain.start(payload)
+
     # --------------------------------------------------------------- runtime
     def job(self, job_id):
         return self.jobs.get(job_id)
@@ -1855,7 +1865,13 @@ class App:
                 'cancel_requested': True,
                 'message': '已请求取消；正在停止当前进程。'}
 
-    def close(self):
+    def close(self, graceful=False):
+        """Stop owned work; with graceful=True wait briefly for current writes.
+
+        A desktop window close is an orderly request: queued jobs are cancelled,
+        running jobs are asked to stop, and the process waits for the job pool
+        before exiting. A hard internal stop keeps the previous fast path.
+        """
         self._closing.set()
         with self._lock:
             procs = list(self._procs.values())
@@ -1866,5 +1882,5 @@ class App:
             self.engine.hash_cache.save()
         except Exception:  # noqa: BLE001
             pass
-        self.jobs.shutdown(wait=False)
-        log.info('HANGAR service closed')
+        self.jobs.shutdown(wait=bool(graceful))
+        log.info('HANGAR service closed (graceful=%s)', graceful)

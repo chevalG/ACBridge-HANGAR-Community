@@ -12,9 +12,18 @@
   shoulder animation, IK and combat behavior are not reproduced.
 - GLB export contains the model, supported materials and native motion. It does
   not include the experimental FXR runtime.
-- The final 3.1.1 package has machine-level end-to-end checks but
+- The final 3.1.2 package has machine-level end-to-end checks but
   `gui_acceptance=false`: manual visual appearance, playback/seek appearance and
   long-duration GPU sessions were not completed.
+- The desktop shell requires Microsoft Edge WebView2 Runtime. Current Windows
+  10/11 installations normally have it; otherwise the launcher shows the
+  official runtime link instead of opening a broken window.
+- Closing the HANGAR window requests a graceful stop. A wedged third-party
+  unpacker can delay that stop until its timeout; the launcher then terminates
+  only its own child process tree.
+- The desktop icon is derived from game emblem artwork supplied by the project
+  owner. See `THIRD-PARTY-NOTICES.md`; no ownership of the original artwork is
+  claimed.
 - The complete regression run retained 2 failures requiring an absent default
   C4201 body/head layout and 9 setup errors requiring a missing historical H06
   frozen fixture. The two C4201 tests pass with the genuine source layout. No

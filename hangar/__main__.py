@@ -93,7 +93,9 @@ def main(argv=None):
         if stop.is_set():
             return
         stop.set()
-        threading.Thread(target=server.shutdown, name='hangar-signal-stop', daemon=True).start()
+        def request_stop():
+            server.shutdown()
+        threading.Thread(target=request_stop, name='hangar-signal-stop', daemon=True).start()
 
     for name in ('SIGINT', 'SIGTERM', 'SIGBREAK'):
         sig = getattr(signal, name, None)
@@ -116,7 +118,10 @@ def main(argv=None):
         try:
             server.server_close()
         finally:
-            app.close()
+            # Let in-flight import/export writes finish before process exit.
+            # Closing the UI is an orderly request, not a reason to corrupt a
+            # half-written catalog or artifact.
+            app.close(graceful=True)
         try:
             marker = data_dir / 'launcher-server.json'
             current = json.loads(marker.read_text(encoding='utf-8'))

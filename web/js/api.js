@@ -149,6 +149,19 @@ export class HangarAPI {
     });
   }
 
+  /** 读取解包工具链状态: GET /api/toolchain */
+  async getToolchain() {
+    return await this.request('/api/toolchain');
+  }
+
+  /** 启动一键依赖安装: POST /api/toolchain/install */
+  async installToolchain(payload = {}) {
+    return await this.request('/api/toolchain/install', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
   /**
    * 提交机甲四槽装配与动画构建作业: POST /api/build
    * @param {Object} parts { HD, BD, AM, LG }
