@@ -42,7 +42,7 @@ def wait_job(base, ident):
     raise TimeoutError(ident)
 
 
-def instance(package, data, populated, min_counts=(90, 150, 30)):
+def instance(package, data, populated, min_counts=(90, 150, 30), expected_version='3.1.3'):
     env = dict(os.environ, HANGAR_DATA=str(data), PYTHONNOUSERSITE='1',
                PYTHONUTF8='1', PYTHONDONTWRITEBYTECODE='1')
     if not populated:
@@ -61,7 +61,6 @@ def instance(package, data, populated, min_counts=(90, 150, 30)):
     record = {'data': str(data), 'startup_ms': (time.perf_counter() - tick) * 1000, 'url': base}
     try:
         health = api(base, 'api/health')
-        expected_version = manifest_version[0]
         assert health['ok'] and health['version'] == expected_version, (health, expected_version)
         assert health['engine_info']['ready'], health
         assert Path(health['data_dir']).resolve() == data.resolve(), health
@@ -179,8 +178,10 @@ def main():
             assert runtime_manifest[name] == version, (name, version)
         min_counts = tuple(int(v) for v in args.min_counts.split(','))
         report['min_counts'] = list(min_counts)
-        report['first_run'] = instance(package, args.empty_profile, False)
-        report['populated'] = instance(package, args.profile, True, min_counts)
+        report['first_run'] = instance(package, args.empty_profile, False,
+                                       expected_version=manifest['app_version'])
+        report['populated'] = instance(package, args.profile, True, min_counts,
+                                       expected_version=manifest['app_version'])
         # Shipped files must remain byte-identical after real operations.
         for name, sha in expected.items():
             assert digest(package / name) == sha, name

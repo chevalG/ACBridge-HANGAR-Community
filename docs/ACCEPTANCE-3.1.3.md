@@ -55,6 +55,24 @@ Two defects were found by this verification and fixed before packaging:
    browser from the dev tree). Replaced with a real directory copy
    (git-ignored); packaging is unaffected because it copies real files.
 
+## Portable package acceptance (r16, verify_h24_package)
+
+The exact release ZIP was verified end to end: every member hash matches
+`PACKAGE-MANIFEST.json`, the ZIP round-trips (archive vs extracted hashes), the
+bundled runtime resolves numpy/scipy/PIL/acbridge inside its own prefix, and
+shipped files stay byte-identical after the runs.
+
+| Check | Result |
+|---|---|
+| First run on a brand-new empty profile | PASS (service ready 2.8 s, library genuinely empty, clean stop exit 0) |
+| Populated real-resource profile | PASS (ready 2.0 s; library 268 assets: player+enemy+weapon) |
+| Real player build with a000_020100 walk | PASS (GLB with skinned mesh, 2 exported animation tracks) |
+| Real standalone C3000 preview + export | PASS (glTF validator 0 errors; export hash equals artifact hash) |
+| Invalid import (empty directory) | PASS (job fails honestly; previous catalog and model preserved; preview cache still hits) |
+| Runtime isolation | PASS (no user-site packages; all modules resolve inside `runtime/`) |
+
+Evidence: `D:\Temp\hangar-v313-verify\verify-report.json` (local).
+
 ## Honest boundaries
 
 - zh-to-en coverage covers every surface reachable in normal builds. The
