@@ -42,7 +42,7 @@ def wait_job(base, ident):
     raise TimeoutError(ident)
 
 
-def instance(package, data, populated):
+def instance(package, data, populated, min_counts=(90, 150, 30)):
     env = dict(os.environ, HANGAR_DATA=str(data), PYTHONNOUSERSITE='1',
                PYTHONUTF8='1', PYTHONDONTWRITEBYTECODE='1')
     if not populated:
@@ -72,9 +72,9 @@ def instance(package, data, populated):
             assert not library['assets'], 'First-run profile must be genuinely empty'
         else:
             counts = library['counts']
-            assert counts['player'] >= 90, counts
-            assert counts['enemy'] >= 150, counts
-            assert counts['weapon'] >= 30, counts
+            assert counts['player'] >= min_counts[0], counts
+            assert counts['enemy'] >= min_counts[1], counts
+            assert counts['weapon'] >= min_counts[2], counts
             config = dict(api(base, 'api/state')['last_config'])
             config['clip_ids'] = ['a000_020100']
             built = api(base, 'api/build', config)
@@ -132,6 +132,8 @@ def main():
     parser.add_argument('--empty-profile', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--reuse-extraction', action='store_true')
+    parser.add_argument('--min-counts', default='90,150,30',
+                        help='minimum player,enemy,weapon library counts for the populated profile')
     args = parser.parse_args()
     for name in ('archive', 'folder', 'extract', 'profile', 'empty_profile', 'output'):
         setattr(args, name, getattr(args, name).expanduser().resolve())
@@ -175,8 +177,10 @@ def main():
         runtime_manifest = json.loads((package / 'runtime-manifest.json').read_text(encoding='utf8'))
         for name, version in report['runtime_versions'].items():
             assert runtime_manifest[name] == version, (name, version)
+        min_counts = tuple(int(v) for v in args.min_counts.split(','))
+        report['min_counts'] = list(min_counts)
         report['first_run'] = instance(package, args.empty_profile, False)
-        report['populated'] = instance(package, args.profile, True)
+        report['populated'] = instance(package, args.profile, True, min_counts)
         # Shipped files must remain byte-identical after real operations.
         for name, sha in expected.items():
             assert digest(package / name) == sha, name
