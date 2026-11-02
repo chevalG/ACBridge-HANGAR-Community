@@ -1,16 +1,20 @@
 import { StorageManager } from './storage.js';
 import { api } from './api.js';
+import { t, onChange } from './i18n.js';
+import './strings-render.js';
 
+// 值为 i18n 键：摄影棚长描述与 index.html 静态键逐字一致，直接复用 ui.studio.presetStudioLong。
 const PRESET_COPY = {
-  studio: '柔和的中性主光与反射，适合展示装甲表面。',
-  industrial: '冷蓝主光与暖色轮廓光，突出机械轮廓和空间感。',
-  inspection: '均衡的中性光照，减少强烈阴影，便于检查几何与纹理。'
+  studio: 'ui.studio.presetStudioLong',
+  industrial: 'render.presetIndustrialCopy',
+  inspection: 'render.presetInspectionCopy'
 };
 
+// key 是后端材质报告的警告原文（数据，不翻译）；值为 i18n 键。
 const MATERIAL_NOTES = {
-  'Original-game visual parity remains not_verified': '原游戏视觉一致性尚未验证。',
-  'PBR factors and unimplemented shader layers are visual approximations': 'PBR 参数与尚未重建的着色器层采用显示近似。',
-  'Some images are confirmed MATBIN template defaults; original model-specific painting is not established': '部分图像来自已确认的原版材质模板默认值；该模型在游戏中的专属涂装仍未确认。'
+  'Original-game visual parity remains not_verified': 'render.materialNoteParity',
+  'PBR factors and unimplemented shader layers are visual approximations': 'render.materialNotePbrApprox',
+  'Some images are confirmed MATBIN template defaults; original model-specific painting is not established': 'render.materialNoteTemplateDefault'
 };
 
 /** Photography controls never modify asset materials or animation state. */
@@ -52,9 +56,17 @@ export class RenderStudio {
           const input = document.getElementById('material-roots-input');
           input.value = [...new Set([...input.value.split('\n').filter(Boolean), selected.path])].join('\n');
         }
-      } catch (error) { this.notify(`目录选择失败：${error.message}`, 'error'); }
+      } catch (error) { this.notify(t('render.dirPickFailed', { msg: error.message }), 'error'); }
     });
-    this.viewer.onMaterialReportChanged = report => this.showMaterials(report);
+    this.viewer.onMaterialReportChanged = report => {
+      this.lastMaterialReport = report;
+      this.showMaterials(report);
+    };
+    // 语言切换后重写动态文案：微任务保证在 applyDOM(document) 重新应用静态键之后执行。
+    onChange(() => queueMicrotask(() => {
+      this.sync();
+      if (this.lastMaterialReport !== undefined) this.showMaterials(this.lastMaterialReport);
+    }));
     this.sync();
   }
 
@@ -93,11 +105,11 @@ export class RenderStudio {
       const roots = [...new Set(document.getElementById('material-roots-input').value
         .split('\n').map(value => value.trim()).filter(Boolean))];
       await api.updateSettings({ material_roots: roots });
-      document.getElementById('material-roots-state').textContent = '目录已保存。重新预览或构建模型后应用贴图。';
-      this.notify('贴图目录已保存，重新预览或构建以应用。', 'success');
+      document.getElementById('material-roots-state').textContent = t('render.rootsSaved');
+      this.notify(t('render.rootsSavedToast'), 'success');
     } catch (error) {
-      document.getElementById('material-roots-state').textContent = `保存失败：${error.message}`;
-      this.notify(`贴图目录保存失败：${error.message}`, 'error');
+      document.getElementById('material-roots-state').textContent = t('render.rootsSaveFailed', { msg: error.message });
+      this.notify(t('render.rootsSaveFailedToast', { msg: error.message }), 'error');
     } finally { button.disabled = false; }
   }
 
@@ -112,7 +124,7 @@ export class RenderStudio {
     document.getElementById('render-exposure-value').value = exposure.toFixed(2);
     document.getElementById('render-lens').value = this.viewer.camera.fov;
     document.getElementById('render-lens-value').value = `${this.viewer.camera.fov}°`;
-    document.getElementById('render-preset-description').textContent = PRESET_COPY[this.viewer.renderPreset];
+    document.getElementById('render-preset-description').textContent = t(PRESET_COPY[this.viewer.renderPreset]);
     document.getElementById('select-bg-preset').value = this.viewer.backgroundPreset;
     document.getElementById('render-ground').checked = this.viewer.isGroundVisible !== false;
   }
@@ -125,9 +137,9 @@ export class RenderStudio {
         longEdge: Number(document.getElementById('photo-size').value),
         transparent: document.getElementById('photo-transparent').checked
       });
-      this.notify(`照片已生成：${filename}`, 'success');
+      this.notify(t('render.photoSaved', { name: filename }), 'success');
     } catch (error) {
-      this.notify(`照片保存失败：${error.message}`, 'error');
+      this.notify(t('render.photoSaveFailed', { msg: error.message }), 'error');
     } finally { button.disabled = false; }
   }
 
@@ -137,30 +149,39 @@ export class RenderStudio {
     const records = document.getElementById('material-source-records');
     records.replaceChildren();
     if (!report) {
-      badge.textContent = '视觉近似';
-      summary.textContent = '此模型没有 H07 贴图来源记录。当前材质未确认与原游戏一致。';
+      badge.textContent = t('render.badgeApprox');
+      summary.textContent = t('render.summaryNoRecord');
       return;
     }
-    badge.textContent = report.textured_materials > 0 ? '原版数据重建' : '视觉近似';
+    badge.textContent = report.textured_materials > 0 ? t('render.badgeNative') : t('render.badgeApprox');
     const count = report.material_count ?? (Array.isArray(report.materials) ? report.materials.length : report.materials) ?? 0;
-    summary.textContent = `${report.textured_materials || 0} / ${count} 个材质使用已关联贴图，${report.image_count || 0} 张嵌入图像。原版来源已记录；着色器表现含近似，原游戏视觉一致性尚未验证。`;
+    summary.textContent = t('render.materialSummary', {
+      linked: report.textured_materials || 0, count, images: report.image_count || 0
+    });
     for (const warning of report.warnings || []) {
       const line = document.createElement('p');
-      line.className = 'material-source-warning'; line.textContent = MATERIAL_NOTES[warning] || warning;
+      line.className = 'material-source-warning';
+      line.textContent = MATERIAL_NOTES[warning] ? t(MATERIAL_NOTES[warning]) : warning;
       records.append(line);
     }
     const materialRecords = report.records || (Array.isArray(report.materials) ? report.materials : []);
+    const roleLabels = { baseColor: 'render.roleBaseColor', normal: 'render.roleNormal', emissive: 'render.roleEmissive' };
+    const fieldSep = t('render.listSep');
     for (const record of materialRecords) {
       const details = document.createElement('details');
       const heading = document.createElement('summary');
-      const name = record.mtd || record.name || `材质 ${record.source_material_index}`;
+      const name = record.mtd || record.name || t('render.materialFallbackName', { index: record.source_material_index });
       heading.textContent = name.split(/[\\/]/).pop();
       details.append(heading);
-      const roles = Object.entries(record.channels || {}).filter(([, value]) => value?.status === 'embedded').map(([key]) => ({baseColor:'颜色',normal:'法线',emissive:'自发光'}[key] || key));
+      const roles = Object.entries(record.channels || {}).filter(([, value]) => value?.status === 'embedded').map(([key]) => roleLabels[key] ? t(roleLabels[key]) : key);
       if (roles.length || record.template_default) {
         const note = document.createElement('p');
         note.className = 'studio-help';
-        note.textContent = [roles.length ? `已关联：${roles.join('、')}` : '', record.template_default ? '使用原版材质模板的默认纹理；不等同于该部件原版涂装。' : ''].filter(Boolean).join('。');
+        const parts = [
+          roles.length ? t('render.channelsLinked', { roles: roles.join(fieldSep) }) : '',
+          record.template_default ? t('render.templateDefaultNote') : ''
+        ];
+        note.textContent = parts.filter(Boolean).join(t('render.noteSep'));
         details.append(note);
       }
       const text = document.createElement('pre');

@@ -11,7 +11,20 @@ import sys
 import shutil
 from pathlib import Path
 import numpy as np
+from . import i18n
 from .static_asset import reader, bone_frames, convert
+
+# The material-body snapshot warning is surfaced to the frontend through
+# library._finish_preview's warnings list; everything else here is technical
+# log text and stays verbatim.
+i18n.register('mount', {
+    'zh-CN': {
+        'materialSnapshotWarning': '机体材质保留已构建的嵌入快照；部分原件离线或已变化，未用新来源覆盖。',
+    },
+    'en': {
+        'materialSnapshotWarning': 'Body materials keep the already-built embedded snapshot; some original files are offline or changed, and sources were not overwritten.',
+    },
+})
 
 
 def attach(body_path,weapon_path,part_path,geometry_path,reference,output,slot='weapon',
@@ -132,7 +145,7 @@ def refresh_material_body(req):
                 if not any(Path(r['path']).resolve()==Path(source).resolve() and r.get('sha256')==digest for r in identities):
                     raise ValueError('Material body source does not match original geometry identity')
         except (OSError,ValueError) as ex:
-            snapshot.update(warning='机体材质保留已构建的嵌入快照；部分原件离线或已变化，未用新来源覆盖。',reason=str(ex))
+            snapshot.update(warning=i18n.t('mount.materialSnapshotWarning'),reason=str(ex))
             return snapshot
         current=material_signature(req['material_body_sources'],req['material_roots'])
         if old != current:

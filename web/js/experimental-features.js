@@ -1,4 +1,7 @@
 /** One release gate: no FXR downloads, controls or frame work until opted in. */
+import { t } from './i18n.js';
+import './strings-exp.js';
+
 export async function initExperimentalFeatures(app, load = () => Promise.all([
   import('./fxr-observer.js'), import('./fxr-player.js'), import('./fxr-bound.js')
 ])) {
@@ -12,6 +15,6 @@ export async function initExperimentalFeatures(app, load = () => Promise.all([
   await app.boundFxr.init();
   for (const id of ['btn-fxr-observer', 'btn-fxr-player', 'btn-bound-fxr']) {
     const button = document.getElementById(id);
-    if (button) button.textContent += '（实验）';
+    if (button) button.textContent += t('exp.badge');
   }
 }

@@ -1,12 +1,12 @@
 {
   "product": "ACBridge HANGAR",
-  "version": "3.1.2",
+  "version": "3.1.3",
   "license": "GPL-3.0-only",
   "repository": "https://github.com/chevalG/ACBridge-HANGAR-Community",
   "components": [
     {
       "name": "ACBridge HANGAR",
-      "source": "repository tag v3.1.2",
+      "source": "repository tag v3.1.3",
       "license": "GPL-3.0-only"
     },
     {

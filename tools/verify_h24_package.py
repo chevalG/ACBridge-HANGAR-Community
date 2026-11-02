@@ -61,7 +61,8 @@ def instance(package, data, populated):
     record = {'data': str(data), 'startup_ms': (time.perf_counter() - tick) * 1000, 'url': base}
     try:
         health = api(base, 'api/health')
-        assert health['ok'] and health['version'] == '3.1.1', health
+        expected_version = manifest_version[0]
+        assert health['ok'] and health['version'] == expected_version, (health, expected_version)
         assert health['engine_info']['ready'], health
         assert Path(health['data_dir']).resolve() == data.resolve(), health
         record['health'] = health
@@ -141,6 +142,7 @@ def main():
             assert not args.extract.exists(), 'Use a new extraction directory'
         assert not args.empty_profile.exists(), 'Use a new first-run profile'
         manifest = json.loads((args.folder / 'PACKAGE-MANIFEST.json').read_text(encoding='utf8'))
+        manifest_version = [manifest['app_version']]
         expected = {name: row['sha256'] for name, row in manifest['files'].items()}
         expected['PACKAGE-MANIFEST.json'] = digest(args.folder / 'PACKAGE-MANIFEST.json')
         with zipfile.ZipFile(args.archive) as bundle:

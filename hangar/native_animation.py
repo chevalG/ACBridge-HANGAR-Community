@@ -13,9 +13,22 @@ import sys
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from . import i18n
 from .static_asset import (GlbWriter, MissingRigidBinding, bone_frames,
                            component_frame, component_spec, mesh_payload,
                            normal_w, reader, add_extra_uvs)
+
+# Animation display-name suffixes shown in the viewer's clip selector.
+i18n.register('nanim', {
+    'zh-CN': {
+        'animationSuffixApprox': ' · 近似预览 · 安全旋转投影',
+        'animationSuffixOriginal': ' · 原版 HKX 骨骼轨',
+    },
+    'en': {
+        'animationSuffixApprox': ' · Approximate preview · Safe rotation projection',
+        'animationSuffixOriginal': ' · Original HKX bone tracks',
+    },
+})
 
 
 class NativeWriter(GlbWriter):
@@ -444,7 +457,7 @@ def convert(request):
         research = rotation_certificate is not None
         processing = {'mode':mode,'strategy':'certified_spline_projection' if research else 'original_unit_rotation',
                       'experimental':research,'game_runtime_verified':False}
-        animations.append({'name': Path(clip).stem + (' · '+label if label else '') + (' · 近似预览 · 安全旋转投影' if research else ' · 原版 HKX 骨骼轨'), 'samplers': samplers,
+        animations.append({'name': Path(clip).stem + (' · '+label if label else '') + (i18n.t('nanim.animationSuffixApprox') if research else i18n.t('nanim.animationSuffixOriginal')), 'samplers': samplers,
                            'channels': channels, 'extras': {'source_sha256': before[str(Path(clip))],
                             'semantic_identity': 'source_debug_correlated' if label else 'unknown',
                             'semantic_proof':request.get('semantic_proof'), 'original_skeleton': expected,

@@ -11,6 +11,20 @@ import sys
 import traceback
 from pathlib import Path
 
+from . import i18n
+
+i18n.register('worker', {
+    'zh-CN': {'dynamicFailed': 'ACBridge 动态导出失败。'},
+    'en': {'dynamicFailed': 'The ACBridge dynamic export failed.'},
+})
+
+from . import i18n
+
+i18n.register('worker', {
+    'zh-CN': {'dynamicFailed': 'ACBridge 动态导出失败。'},
+    'en': {'dynamicFailed': 'The ACBridge dynamic export failed.'},
+})
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='HANGAR dynamic export worker')
@@ -41,7 +55,7 @@ def main(argv=None):
             error = result.get('error') or {}
             error_path.write_text(json.dumps({
                 'code': error.get('code', 'dynamic_failed'),
-                'message': error.get('message', 'ACBridge 动态导出失败。'),
+                'message': error.get('message', i18n.t('worker.dynamicFailed')),
                 'details': error.get('details') or {},
                 'failed_stage': result.get('failed_stage'),
                 'result': str(Path(request['output']) / 'result.json'),

@@ -1207,3 +1207,36 @@ input[type="range"]::-webkit-slider-thumb:hover {
   .slot-badge-card { padding: 6px; }
   .catalog-toolbar { padding: 8px 12px; }
 }
+
+/* ---- 界面语言切换器 (Language switcher) ---- */
+.lang-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--bg-input);
+  flex-shrink: 0;
+}
+.lang-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  line-height: 1;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lang-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+.lang-btn.active {
+  color: #0a0e14;
+  background: var(--accent-amber);
+}

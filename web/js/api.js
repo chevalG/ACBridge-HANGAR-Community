@@ -4,6 +4,8 @@
  */
 
 import { DEFAULT_CATALOG_PARTS, DEFAULT_CATALOG_CLIPS, BUILTIN_PRESETS, enhancePartMetadata, enhanceClipMetadata } from './catalog-data.js';
+import { t, langHeader } from './i18n.js';
+import './strings-api.js';
 
 export class HangarAPI {
   constructor(baseUrl = '') {
@@ -12,13 +14,14 @@ export class HangarAPI {
   }
 
   /**
-   * 通用 JSON 请求包装器
+   * 通用 JSON 请求包装器（附带当前界面语言，后端据此返回本地化文案）
    */
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     const defaultHeaders = {
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'X-Hangar-Lang': langHeader()
     };
 
     try {
@@ -46,13 +49,20 @@ export class HangarAPI {
       if (!response.ok) {
         const errorInfo = data?.error || {
           code: `HTTP_${response.status}`,
-          message: data?.message || response.statusText || '请求失败',
+          message: data?.message || response.statusText || t('api.requestFailed'),
           details: data?.details || data
         };
         const err = new Error(errorInfo.message);
         err.code = errorInfo.code;
         err.details = errorInfo.details;
         err.status = response.status;
+        // 用稳定错误码给出当前语言摘要；服务端原文保留在 originalMessage。
+        const errKey = `err.${errorInfo.code}`;
+        const localized = t(errKey);
+        if (localized !== errKey) {
+          err.originalMessage = errorInfo.message;
+          err.message = localized;
+        }
         throw err;
       }
 
@@ -213,7 +223,7 @@ export class HangarAPI {
 
       if (job.status === 'failed' || job.status === 'cancelled') {
         const msg = job.error?.message || job.message ||
-          (job.status === 'cancelled' ? '任务已取消' : '作业执行失败');
+          (job.status === 'cancelled' ? t('api.jobCancelled') : t('api.jobFailed'));
         const err = new Error(msg);
         err.code = job.status === 'cancelled' ? 'cancelled' : (job.error?.code || 'job_failed');
         err.job = job;
@@ -225,7 +235,7 @@ export class HangarAPI {
       else await new Promise(resolve => setTimeout(resolve, intervalMs));
     }
 
-    throw new Error(`作业 ${jobId} 执行超时 (${Math.round(timeoutMs / 1000)} 秒)`);
+    throw new Error(t('api.jobTimeout', { id: jobId, secs: Math.round(timeoutMs / 1000) }));
   }
 
   /**

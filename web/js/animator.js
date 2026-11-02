@@ -4,6 +4,8 @@
  */
 
 import * as THREE from 'three';
+import { t } from './i18n.js';
+import './strings-animator.js';
 
 export class HangarAnimator {
   constructor() {
@@ -110,7 +112,7 @@ export class HangarAnimator {
   }
 
   installClips(clips) {
-    if(!this.currentModel) throw new Error('玩家机体尚未绑定骨架');
+    if(!this.currentModel) throw new Error(t('animator.skeletonNotBound'));
     if(!this.mixer) { this.bindModel(this.currentModel,clips); return; }
     for(const clip of clips) {
       const old=this.clips.find(c=>c.name===clip.name);

@@ -14,8 +14,66 @@ import re
 import threading
 from pathlib import Path
 
+from . import i18n
 from .errors import Conflict, HangarError, NotFound
 from .util import atomic_write_json, now_iso, read_json
+
+i18n.register('ident', {
+    'zh-CN': {
+        'invalidKind': '身份类型必须是 player、enemy 或 weapon。',
+        'invalidResourceId': '资源 ID 无效。',
+        'fieldMustBeText': '{field} 必须是文本。',
+        'fieldTooLong': '{field} 不能超过 {limit} 个字符。',
+        'fieldControlChars': '{field} 含不可见控制字符。',
+        'namesMustBeObject': 'names 必须是含 zh/en 的对象。',
+        'namesUnknownLang': 'names 含未知语言：{langs}。',
+        'namesRequired': 'names 至少需要 zh 或 en。',
+        'fieldMustBeList': '{field} 必须是文本数组。',
+        'itemMustBeText': '{field} 的每一项都必须是文本。',
+        'itemTooLong': '{field} 的单项不能超过 {limit} 个字符。',
+        'tooManyItems': '{field} 最多 {limit} 项。',
+        'sourceRefsMustBeList': 'source_refs 必须是不超过 30 项的数组。',
+        'sourceRefsMustBeObjects': 'source_refs 的每一项必须是对象。',
+        'sourceRefsUnknownKeys': 'source_refs 含未知键：{keys}。',
+        'sourceRefsLabelRequired': 'source_refs 每一项都需要 label。',
+        'statusInvalid': 'status 只能是 known 或 pending。',
+        'requestMustBeObject': '身份请求必须是 JSON 对象。',
+        'unknownFields': '未知身份字段：{fields}。',
+        'resetMustBeBool': 'reset 必须是布尔值。',
+        'resetExclusive': 'reset 会删除全部用户覆盖，不能同时提交其他身份字段。',
+        'fieldsRequired': '请提供至少一个身份字段或 reset。',
+        'revisionMustBeInt': 'expected_revision 必须是非负整数。',
+        'notFound': '馆藏身份不存在。',
+        'conflict': '馆藏身份已被其他操作更新；请刷新后重试。',
+    },
+    'en': {
+        'invalidKind': 'Identity kind must be player, enemy or weapon.',
+        'invalidResourceId': 'Invalid resource ID.',
+        'fieldMustBeText': '{field} must be text.',
+        'fieldTooLong': '{field} must not exceed {limit} characters.',
+        'fieldControlChars': '{field} contains invisible control characters.',
+        'namesMustBeObject': 'names must be an object with zh/en keys.',
+        'namesUnknownLang': 'names contains unknown languages: {langs}.',
+        'namesRequired': 'names requires at least zh or en.',
+        'fieldMustBeList': '{field} must be an array of text.',
+        'itemMustBeText': 'Every item in {field} must be text.',
+        'itemTooLong': 'Each item in {field} must not exceed {limit} characters.',
+        'tooManyItems': '{field} allows at most {limit} items.',
+        'sourceRefsMustBeList': 'source_refs must be an array of at most 30 items.',
+        'sourceRefsMustBeObjects': 'Every source_refs item must be an object.',
+        'sourceRefsUnknownKeys': 'source_refs contains unknown keys: {keys}.',
+        'sourceRefsLabelRequired': 'Every source_refs item needs a label.',
+        'statusInvalid': 'status must be known or pending.',
+        'requestMustBeObject': 'The identity request must be a JSON object.',
+        'unknownFields': 'Unknown identity fields: {fields}.',
+        'resetMustBeBool': 'reset must be a boolean.',
+        'resetExclusive': 'reset removes all user overrides and cannot be combined with other identity fields.',
+        'fieldsRequired': 'Provide at least one identity field or reset.',
+        'revisionMustBeInt': 'expected_revision must be a non-negative integer.',
+        'notFound': 'The library identity does not exist.',
+        'conflict': 'The library identity was updated by another operation; refresh and try again.',
+    },
+})
 
 SCHEMA = 'h20-identity-store-1'
 CATALOG_SCHEMA = 'h20-identity-catalog-1'
@@ -32,11 +90,11 @@ EMPTY = {'names': {'zh': None, 'en': None}, 'aliases': [], 'missions': [],
 def identity_key(kind, resource_id):
     kind = str(kind or '').lower()
     if kind not in KINDS:
-        raise HangarError('invalid_identity_kind', '身份类型必须是 player、enemy 或 weapon。',
+        raise HangarError('invalid_identity_kind', i18n.t('ident.invalidKind'),
                           details={'kind': kind})
     resource_id = str(resource_id or '').strip().upper()
     if not RESOURCE_ID.fullmatch(resource_id):
-        raise HangarError('invalid_resource_id', '资源 ID 无效。',
+        raise HangarError('invalid_resource_id', i18n.t('ident.invalidResourceId'),
                           details={'resource_id': resource_id})
     return f'{kind}:{resource_id}'
 
@@ -46,16 +104,16 @@ def _text(value, limit, field, empty_none=True):
     if value is None:
         return None if empty_none else ''
     if not isinstance(value, str):
-        raise HangarError('invalid_identity_field', f'{field} 必须是文本。',
+        raise HangarError('invalid_identity_field', i18n.t('ident.fieldMustBeText', field=field),
                           details={'field': field})
     value = value.strip()
     if not value:
         return None if empty_none else ''
     if len(value) > limit:
-        raise HangarError('invalid_identity_field', f'{field} 不能超过 {limit} 个字符。',
+        raise HangarError('invalid_identity_field', i18n.t('ident.fieldTooLong', field=field, limit=limit),
                           details={'field': field, 'limit': limit})
     if any(ord(ch) < 32 and ch not in '\n\t' for ch in value):
-        raise HangarError('invalid_identity_field', f'{field} 含不可见控制字符。',
+        raise HangarError('invalid_identity_field', i18n.t('ident.fieldControlChars', field=field),
                           details={'field': field})
     return value
 
@@ -64,13 +122,13 @@ def _names(value):
     if value is None:
         return {'zh': None, 'en': None}
     if not isinstance(value, dict):
-        raise HangarError('invalid_identity_field', 'names 必须是含 zh/en 的对象。')
+        raise HangarError('invalid_identity_field', i18n.t('ident.namesMustBeObject'))
     unknown = sorted(set(value) - {'zh', 'en'})
     if unknown:
-        raise HangarError('invalid_identity_field', f'names 含未知语言：{", ".join(unknown)}。',
+        raise HangarError('invalid_identity_field', i18n.t('ident.namesUnknownLang', langs=', '.join(unknown)),
                           details={'allowed': ['zh', 'en']})
     if not value:
-        raise HangarError('invalid_identity_field', 'names 至少需要 zh 或 en。')
+        raise HangarError('invalid_identity_field', i18n.t('ident.namesRequired'))
     return {lang: _text(value.get(lang), 120, f'names.{lang}')
             for lang in ('zh', 'en') if lang in value}
 
@@ -80,24 +138,24 @@ def _text_list(value, field):
     if value is None:
         return []
     if not isinstance(value, list):
-        raise HangarError('invalid_identity_field', f'{field} 必须是文本数组。',
+        raise HangarError('invalid_identity_field', i18n.t('ident.fieldMustBeList', field=field),
                           details={'field': field})
     result = []
     for item in value:
         if not isinstance(item, str):
-            raise HangarError('invalid_identity_field', f'{field} 的每一项都必须是文本。',
+            raise HangarError('invalid_identity_field', i18n.t('ident.itemMustBeText', field=field),
                               details={'field': field})
         item = item.strip()
         if not item:
             continue
         if len(item) > limit_text:
             raise HangarError('invalid_identity_field',
-                              f'{field} 的单项不能超过 {limit_text} 个字符。',
+                              i18n.t('ident.itemTooLong', field=field, limit=limit_text),
                               details={'field': field, 'limit': limit_text})
         if item not in result:
             result.append(item)
     if len(result) > limit_items:
-        raise HangarError('invalid_identity_field', f'{field} 最多 {limit_items} 项。',
+        raise HangarError('invalid_identity_field', i18n.t('ident.tooManyItems', field=field, limit=limit_items),
                           details={'field': field, 'limit': limit_items})
     return result
 
@@ -106,19 +164,19 @@ def _source_refs(value):
     if value is None:
         return []
     if not isinstance(value, list) or len(value) > 30:
-        raise HangarError('invalid_identity_field', 'source_refs 必须是不超过 30 项的数组。')
+        raise HangarError('invalid_identity_field', i18n.t('ident.sourceRefsMustBeList'))
     result = []
     for item in value:
         if not isinstance(item, dict):
-            raise HangarError('invalid_identity_field', 'source_refs 的每一项必须是对象。')
+            raise HangarError('invalid_identity_field', i18n.t('ident.sourceRefsMustBeObjects'))
         unknown = sorted(set(item) - set(SOURCE_REF_KEYS))
         if unknown:
             raise HangarError('invalid_identity_field',
-                              f'source_refs 含未知键：{", ".join(unknown)}。',
+                              i18n.t('ident.sourceRefsUnknownKeys', keys=', '.join(unknown)),
                               details={'allowed': list(SOURCE_REF_KEYS)})
         label = _text(item.get('label'), 120, 'source_refs.label')
         if not label:
-            raise HangarError('invalid_identity_field', 'source_refs 每一项都需要 label。')
+            raise HangarError('invalid_identity_field', i18n.t('ident.sourceRefsLabelRequired'))
         row = {'label': label}
         for key, limit in (('path', 500), ('url', 500), ('note', 300)):
             text = _text(item.get(key), limit, f'source_refs.{key}')
@@ -133,7 +191,7 @@ def _status(value):
     if value is None:
         return None
     if value not in ('known', 'pending'):
-        raise HangarError('invalid_identity_field', 'status 只能是 known 或 pending。')
+        raise HangarError('invalid_identity_field', i18n.t('ident.statusInvalid'))
     return value
 
 
@@ -151,22 +209,22 @@ def _field(field, value):
 
 def normalize_update(payload):
     if not isinstance(payload, dict):
-        raise HangarError('invalid_request', '身份请求必须是 JSON 对象。')
+        raise HangarError('invalid_request', i18n.t('ident.requestMustBeObject'))
     unknown = sorted(set(payload) - set(FIELDS) - {'expected_revision', 'reset'})
     if unknown:
-        raise HangarError('invalid_identity_field', f'未知身份字段：{", ".join(unknown)}。',
+        raise HangarError('invalid_identity_field', i18n.t('ident.unknownFields', fields=', '.join(unknown)),
                           details={'allowed': list(FIELDS) + ['expected_revision', 'reset']})
     reset = payload.get('reset', False)
     if not isinstance(reset, bool):
-        raise HangarError('invalid_identity_field', 'reset 必须是布尔值。')
+        raise HangarError('invalid_identity_field', i18n.t('ident.resetMustBeBool'))
     if reset and any(field in payload for field in FIELDS):
         raise HangarError('invalid_identity_field',
-                          'reset 会删除全部用户覆盖，不能同时提交其他身份字段。')
+                          i18n.t('ident.resetExclusive'))
     if reset:
         return {'reset': True, 'fields': {}}
     present = [field for field in FIELDS if field in payload]
     if not present:
-        raise HangarError('invalid_identity_request', '请提供至少一个身份字段或 reset。')
+        raise HangarError('invalid_identity_request', i18n.t('ident.fieldsRequired'))
     return {'reset': False,
             'fields': {field: _field(field, payload[field]) for field in present}}
 
@@ -176,7 +234,7 @@ def _expected_revision(payload):
         return None
     value = payload.get('expected_revision')
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-        raise HangarError('invalid_identity_revision', 'expected_revision 必须是非负整数。')
+        raise HangarError('invalid_identity_revision', i18n.t('ident.revisionMustBeInt'))
     return value
 
 
@@ -335,7 +393,7 @@ class IdentityStore:
         with self.lock:
             if key not in self.defaults and key not in self.data['identities'] \
                     and key not in collection:
-                raise NotFound('馆藏身份不存在。', {'key': key})
+                raise NotFound(i18n.t('ident.notFound'), {'key': key})
             return self._resolve(key, collection, automatic)
 
     def update(self, kind, resource_id, payload):
@@ -348,7 +406,7 @@ class IdentityStore:
             revision = int(stored.get('revision') or 0)
             if expected is not None and expected != revision:
                 raise Conflict('identity_conflict',
-                               '馆藏身份已被其他操作更新；请刷新后重试。',
+                               i18n.t('ident.conflict'),
                                {'expected_revision': expected, 'revision': revision,
                                 'identity': self._resolve(key, collection, automatic)})
             overrides = {} if normalized['reset'] else \

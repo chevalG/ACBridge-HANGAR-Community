@@ -18,6 +18,10 @@ import { PresetManager } from './presets.js';
 import { ResourceWizard } from './wizard.js';
 import { AssetExporter } from './exporter.js';
 import { escapeHtml, jobPercent } from './dom.js';
+import { t, init as i18nInit, applyDOM, onChange, setLang, lang } from './i18n.js';
+import './strings-ui.js';
+import './strings-app.js';
+import './strings-api.js';
 
 class HangarApp {
   constructor() {
@@ -34,6 +38,8 @@ class HangarApp {
     this.lastSuccessfulModelUrl = null;
     this.lastSuccessfulConfiguration = null;
     this.lastSuccessfulJobId = null;
+    this.lastHealth = null;
+    this.lastStatusContext = null;
     this.studio = null;
     this.isViewingStandalone = false;
     this.standaloneAsset = null;
@@ -50,8 +56,9 @@ class HangarApp {
     this._bindHeaderActions();
     this._bindTransportControls();
     this._bindKeyboardShortcuts();
+    this._bindLanguageSwitcher();
     window.addEventListener('hangar-preferences-changed', event => {
-      if (api.isConnected) api.updateSettings(event.detail).catch(err => this._showToast(`偏好保存失败：${err.message}`, 'error'));
+      if (api.isConnected) api.updateSettings(event.detail).catch(err => this._showToast(t('app.prefsSaveFailed', { msg: err.message }), 'error'));
     });
 
     // 尝试拉取后端状态或应用离线基线
@@ -67,6 +74,67 @@ class HangarApp {
     this.studio = new HangarStudio(this);
     await this.studio.init();
     await initExperimentalFeatures(this);
+  }
+
+  _bindLanguageSwitcher() {
+    const buttons = [
+      ['btn-lang-zh', 'zh-CN'],
+      ['btn-lang-en', 'en'],
+    ];
+    this._updateLangButtons = () => {
+      const active = lang();
+      for (const [id, value] of buttons) {
+        document.getElementById(id)?.classList.toggle('active', active === value);
+      }
+    };
+    for (const [id, value] of buttons) {
+      document.getElementById(id)?.addEventListener('click', () => setLang(value));
+    }
+    applyDOM(document);
+    this._updateLangButtons();
+    onChange(nextLang => {
+      applyDOM(document);
+      this._updateLangButtons();
+      this.refreshForLanguage();
+      // 后端响应文案随请求头切换；拉取最新状态刷新可见文本。
+      if (api.isConnected) {
+        api.getHealth().then(health => {
+          this.lastHealth = health;
+          this._updateEngineStatus(health);
+        }).catch(() => {});
+        api.getState().then(state => {
+          this.state = state;
+          this.clips?.setLimits(state.limits || null);
+        }).catch(() => {});
+      }
+    });
+  }
+
+  /** 语言切换后重渲染所有由 JS 写入的动态文案。 */
+  refreshForLanguage() {
+    this._updateEngineStatus(this.lastHealth);
+    this._updateHUDStats(this.viewer?.currentStats || { meshes: '', triangles: '', joints: '', dimensions: { x: '', y: '', z: '' } });
+    if (this.lastStatusContext) this._renderModelSupportStatus(this.lastStatusContext);
+    this.catalog?.updateLoadoutDisplay();
+    this.catalog?.renderPartsList();
+    this.clips?.renderClipsList();
+    this.clips?._renderSelectionBar?.();
+    if (this.wizardModal) {
+      this.wizardModal._renderToolchain?.();
+      this.wizardModal._updateModeHint?.();
+    }
+    this.presetsModal?.renderPresetsList?.();
+    {
+      const rightPanel = document.getElementById('right-panel');
+      if (rightPanel?.querySelector('.feature-module')) updatePlayerFeatures(this);
+    }
+    if (this.studio) {
+      this.studio._updateLibraryUI?.();
+      this.studio.renderAssetList?.();
+      this.studio.renderInspector?.();
+      this.studio.renderMotionList?.();
+    }
+    this._updateStandaloneBannerForLanguage?.();
   }
 
   _handleUrlHash() {
@@ -148,19 +216,19 @@ class HangarApp {
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
         `;
-        playBtn.setAttribute('title', isPlaying ? '暂停 (空格键)' : '播放 (空格键)');
+        playBtn.setAttribute('title', isPlaying ? t('app.pauseTip') : t('app.playTip'));
       }
     };
 
     // 剪辑变更
     this.animator.onClipChanged = clipName => {
-      const label=document.getElementById('active-clip-label');if(label)label.textContent=clipName;
+      const label=document.getElementById('active-clip-label');if(label)label.textContent=clipName || t('ui.transport.noClip');
       if (this.clips) {
         this.clips.setActivePlayingClip(clipName);
       }
       const hudClip = document.getElementById('hud-active-clip');
       if (hudClip) {
-        hudClip.textContent = clipName || '无';
+        hudClip.textContent = clipName || t('ui.common.none');
       }
     };
   }
@@ -169,7 +237,7 @@ class HangarApp {
     this.catalog = new EquipmentCatalog('left-panel', {
       onLoadoutChanged: newLoadout => {
         // 装配变更事件
-        this._showToast('已更新装配配置，点击 [立即构建] 烘焙新机体', 'info');
+        this._showToast(t('app.loadoutUpdatedToast'), 'info');
       },
       onBuildRequested: loadout => {
         this.buildAssembly(loadout);
@@ -179,7 +247,7 @@ class HangarApp {
         await this.studio.refreshLibrary();
         const asset=this.studio.libraryData.assets.find(a=>a.kind==='player' && a.resource_id===part.resource_stem?.toUpperCase());
         if (!asset) {
-          this._showToast('请在馆藏导入此部件所在的 expanded 目录后预览。','info');
+          this._showToast(t('app.standaloneNeedsImport'), 'info');
           this.studio.switchMode('library');
           return;
         }
@@ -225,7 +293,7 @@ class HangarApp {
           this.clips.selectedClipIds = new Set(config.clip_ids);
           this.clips.renderClipsList();
         }
-        this._showToast('预设配置已载入，正在启动装配构建...', 'success');
+        this._showToast(t('app.presetApplied'), 'success');
         this.buildAssembly(this.catalog.currentLoadout);
       }
     });
@@ -234,7 +302,7 @@ class HangarApp {
     this.wizardModal = new ResourceWizard('modal-wizard', {
       onImportComplete: async () => {
         await this.refreshState();
-        this._showToast('资源扫描导入成功，装备与动画目录已更新！', 'success');
+        this._showToast(t('app.importComplete'), 'success');
         await this._loadInitialModel();
         if (this.studio && !this.studio.libraryData?.assets?.length && this.state?.catalog?.roots?.length) {
           try {
@@ -287,16 +355,16 @@ class HangarApp {
       if (!this.activeBuildJobId && !this.studio?.activeJobId) return;
       const btn = document.getElementById('btn-cancel-build');
       btn.disabled = true;
-      btn.textContent = '正在取消…';
+      btn.textContent = t('app.cancelling');
       try {
         const jid = this.activeBuildJobId || this.studio?.activeJobId;
         if (!jid) return;
         await api.cancelJob(jid);
-        this._showToast('已请求取消装配；当前机体保持不变。', 'info');
+        this._showToast(t('app.cancelRequested'), 'info');
       } catch (err) {
         btn.disabled = false;
-        btn.textContent = '取消';
-        this._showToast(`取消失败：${err.message}`, 'error');
+        btn.textContent = t('ui.common.cancel');
+        this._showToast(t('app.cancelFailed', { msg: err.message }), 'error');
       }
     });
     document.getElementById('btn-view-only')?.addEventListener('click', () => {
@@ -386,7 +454,7 @@ class HangarApp {
     // 恢复默认姿态 (Bind Pose)
     document.getElementById('btn-transport-reset-pose')?.addEventListener('click', () => {
       this.animator.resetToBindPose();
-      this._showToast('已还原机甲至初始装配绑定姿势 (Bind Pose)', 'info');
+      this._showToast(t('app.bindPoseRestored'), 'info');
     });
 
     // 时间轴滑动
@@ -408,7 +476,7 @@ class HangarApp {
       const active = !btnLoop.classList.contains('active');
       btnLoop.classList.toggle('active', active);
       this.animator.setLoop(active);
-      btnLoop.setAttribute('title', active ? '循环播放：已开启' : '循环播放：关闭 (单次)');
+      btnLoop.setAttribute('title', active ? t('app.loopOn') : t('app.loopOff'));
     });
 
     // 播放倍速预设
@@ -485,10 +553,9 @@ class HangarApp {
         this.lastPlan = plan;
         this.clips.setLimits(this.state?.limits || null);
         this.clips._renderSelectionBar();
-        const deferred = plan.resolved_clip_ids.length - (plan.preview_clip_ids?.[0]?.length ?? 0);
         if (plan.packets > 1) {
           this._showToast(
-            `已选 ${clipIds.length} 段动画：将按字节预算分为 ${plan.packets} 个文件导出（不会裁剪动画）。`,
+            t('app.planPackets', { count: clipIds.length, packets: plan.packets }),
             'info');
         }
       } catch (_) { /* 预估失败不阻断任何操作 */ }
@@ -500,6 +567,7 @@ class HangarApp {
    */
   async refreshState() {
     const health = await api.getHealth();
+    this.lastHealth = health;
     this._updateEngineStatus(health);
 
     const state = await api.getState();
@@ -549,10 +617,10 @@ class HangarApp {
    * 首次启动自动尝试加载可用模型
    */
   async _loadInitialModel() {
-    if (!api.isConnected) { this._showModelErrorAlert('本地机库服务未连接，请重新启动 HANGAR。', null, { title: '服务未连接 · 场景保持不变' }); return; }
+    if (!api.isConnected) { this._showModelErrorAlert(t('app.serviceDisconnected'), null, { title: t('app.serviceDisconnectedTitle') }); return; }
     if (!this.catalog.parts.length) { this.wizardModal.open(); return; }
     const missing = this.state?.last_config_missing || [];
-    if (missing.length) { this._showModelErrorAlert('保存的配置缺少资源，请重新导入或选择可用部件。', missing, { title: '配置缺失 · 未覆盖当前场景' }); return; }
+    if (missing.length) { this._showModelErrorAlert(t('app.configMissing'), missing, { title: t('app.configMissingTitle') }); return; }
     // Restore the last committed artifact first. If the next cold rebuild
     // fails, the viewport, configuration and export target still share one
     // known-good job instead of leaving an empty or stale-looking scene.
@@ -578,7 +646,7 @@ class HangarApp {
           if (exportButton) exportButton.disabled = false;
         }
       } catch (err) {
-        this._showToast(`上次可用机体无法恢复：${err.message}`, 'warning');
+        this._showToast(t('app.restoreFailed', { msg: err.message }), 'warning');
       }
     }
     if (['HD','BD','AM','LG'].every(slot => this.catalog.currentLoadout[slot])) {
@@ -605,8 +673,8 @@ class HangarApp {
     let candidateModelLoaded = false;
     const clipIds = this.clips.getSelectedClipIds();
 
-    this._showJobOverlay(true, '提交装配作业请求中...', 10);
-    this._showToast('正在由 ACBridge 引擎装配带骨骼机体...', 'info');
+    this._showJobOverlay(true, t('app.submitting'), 10);
+    this._showToast(t('app.assembling'), 'info');
 
     try {
       if (!api.isConnected) {
@@ -615,7 +683,7 @@ class HangarApp {
       }
 
       if (!api.isConnected) {
-        throw new Error('本地 ACBridge 引擎服务未连接 (可在顶部通过 [资源导入向导] 重新连接或启动本地服务)');
+        throw new Error(t('app.engineDisconnected'));
       }
 
       // 提交构建
@@ -623,12 +691,14 @@ class HangarApp {
       const jobId = buildRes.job_id;
       this.activeBuildJobId = jobId;
 
-      this._showJobOverlay(true, `装配任务 [${jobId}] 正在处理骨骼、蒙皮与 HKX 动画...`, 25);
+      this._showJobOverlay(true, t('app.jobProcessing', { id: jobId }), 25);
 
       // 轮询作业直到完成
       const completedJob = await api.pollJob(jobId, job => {
         const pct = jobPercent(job);
-        this._showJobOverlay(true, `[${job.stage || '装配中'}] ${job.message || '正在解算 FLVER 与骨骼矩阵...'}`, Math.max(15, pct));
+        const stage = job.stage ? this._stageLabel(job.stage) : t('app.stageWorking');
+        const message = job.message || t('app.solvingFlver');
+        this._showJobOverlay(true, `[${stage}] ${message}`, Math.max(15, pct));
       });
 
       const completion = completedJob.result?.completion || {};
@@ -636,23 +706,22 @@ class HangarApp {
       if (completion.output_valid === false || (clipIds.length && !completion.exported_clips)) {
         const err = new Error(
           previousCommit.modelUrl
-            ? '所选动作未成功解码，已保留上一台可用机体。'
-            : '所选动作未成功解码（骨骼或轨道不兼容），请改选兼容的 c0000 玩家动作或清空动作后重试。'
+            ? t('app.clipsFailedKept')
+            : t('app.clipsFailed')
         );
         err.details = completedJob.result?.failures || completedJob.result;
         throw err;
       }
       if (selection.unresolved?.length) {
         this._showToast(
-          `${selection.unresolved.length} 个动画 ID 未解析（不在索引或源文件缺失），` +
-          '已跳过它们并正常装配其余动画。', 'info');
+          t('app.unresolvedClips', { count: selection.unresolved.length }), 'info');
       }
       const modelUrl = completedJob.result?.model_ue_url || completedJob.result?.model_url;
       if (!modelUrl) {
-        throw new Error('装配完成但未返回有效的 model_url 资产地址');
+        throw new Error(t('app.noModelUrl'));
       }
 
-      this._showJobOverlay(true, 'GLB 资产生成成功，正在载入 3D 视窗...', 95);
+      this._showJobOverlay(true, t('app.loadingGlb'), 95);
 
       // 视窗加载新模型：viewer.loadModel 本身具有防清空保护
       const loaded = await this.viewer.loadModel(modelUrl);
@@ -678,21 +747,16 @@ class HangarApp {
         weapons: { ...(completedJob.request?.weapons || {}) },
         view: { ...(completedJob.request?.view || {}) }
       };
-      const status = document.getElementById('model-support-status');
-      if (status) {
-        const selectionInfo = completedJob.result?.selection || {};
-        const totalChosen = selectionInfo.requested ?? clipIds.length;
-        const baked = completion.exported_clips || 0;
-        const deferred = selectionInfo.deferred || 0;
-        status.textContent = `${completedJob.partial ? 'partial · ' : ''}` +
-          (deferred ? `${baked} 段已烘焙 / 共选 ${totalChosen} 段（${deferred} 段可按需加载）`
-                    : `${baked} 段原版动作`) +
-          ' · 材质来源见摄影室 · 动态外观未验证';
-        status.title = (completedJob.result.warnings || []).join('\n');
-      }
+      this._renderModelSupportStatus({
+        partial: completedJob.partial,
+        deferred: selection.deferred || 0,
+        baked: completion.exported_clips || 0,
+        totalChosen: selection.requested ?? clipIds.length,
+        warnings: completedJob.result.warnings || [],
+      });
 
       this._showJobOverlay(false);
-      this._showToast(completedJob.partial ? '装配产生部分结果，请查看验证提示。' : '机体装配完成，可旋转查看或尝试动作。', 'success');
+      this._showToast(completedJob.partial ? t('app.partialToast') : t('app.buildDoneToast'), 'success');
       this._hideModelErrorAlert();
       updatePlayerFeatures(this);
     } catch (err) {
@@ -702,7 +766,7 @@ class HangarApp {
           const restored = await this.viewer.loadModel(previousCommit.modelUrl);
           this._onModelLoaded(restored);
         } catch (restoreError) {
-          this._showToast(`上一台机体视窗恢复失败：${restoreError.message}`, 'error');
+          this._showToast(t('app.viewportRestoreFailed', { msg: restoreError.message }), 'error');
         }
       }
       this.activeJobId = previousCommit.jobId;
@@ -733,28 +797,44 @@ class HangarApp {
             last_successful_job: this.lastSuccessfulJobId
           });
         } catch (syncError) {
-          this._showToast(`配置恢复同步失败：${syncError.message}`, 'error');
+          this._showToast(t('app.configSyncFailed', { msg: syncError.message }), 'error');
         }
       } else {
         const status = document.getElementById('model-support-status');
-        if (status && !this.activeJobId) status.textContent = '尚无成功装配模型 · 当前配置未生成 GLB';
+        if (status && !this.activeJobId) status.textContent = t('app.noSuccessfulBuild');
         const exportButton = document.getElementById('btn-open-export');
         if (exportButton && !this.activeJobId) exportButton.disabled = true;
       }
       if (err.code === 'cancelled') {
-        this._showToast('装配已取消，场景中保留上一台有效机体。', 'info');
+        this._showToast(t('app.buildCancelled'), 'info');
       } else {
-        const alertTitle = previousCommit.modelUrl ? '装配未完成 · 已保留当前机体' : '装配未完成 · 当前尚未载入机体';
+        const alertTitle = previousCommit.modelUrl ? t('app.buildFailedKeptTitle') : t('app.buildFailedTitle');
         this._showModelErrorAlert(err.message, err.details, { title: alertTitle });
-        this._showToast(`装配失败: ${err.message}`, 'error');
+        this._showToast(t('app.buildFailed', { msg: err.message }), 'error');
       }
     } finally {
       this.isBuilding = false;
       this.activeBuildJobId = null;
       const cancelBtn = document.getElementById('btn-cancel-build');
-      if (cancelBtn) { cancelBtn.disabled = false; cancelBtn.textContent = '取消'; }
+      if (cancelBtn) { cancelBtn.disabled = false; cancelBtn.textContent = t('ui.common.cancel'); }
       if (this.pendingBuild) { const next = this.pendingBuild; this.pendingBuild = null; this.buildAssembly(next); }
     }
+  }
+
+  _renderModelSupportStatus(context = {}) {
+    this.lastStatusContext = context;
+    const status = document.getElementById('model-support-status');
+    if (!status) return;
+    const { partial, deferred, baked, totalChosen, warnings } = context;
+    status.textContent = `${partial ? 'partial · ' : ''}` +
+      (deferred ? t('app.statusDeferred', { baked, total: totalChosen, deferred })
+                : t('app.statusBaked', { count: baked })) +
+      t('app.statusSuffix');
+    status.title = (warnings || []).join('\n');
+  }
+
+  _stageLabel(stage) {
+    return t(`stage.${stage}`) === `stage.${stage}` ? (stage || t('app.stageWorking')) : t(`stage.${stage}`);
   }
 
   _onModelLoaded({ model, animations, stats }) {
@@ -768,7 +848,7 @@ class HangarApp {
     document.getElementById('btn-transport-play').disabled = !animations.length;
     document.getElementById('transport-scrubber').disabled = !animations.length;
     if (!animations.length) {
-      document.getElementById('hud-active-clip').textContent = '静态源姿态';
+      document.getElementById('hud-active-clip').textContent = t('app.staticPose');
       document.getElementById('transport-time-readout').textContent = '00:00.00 / 00:00.00';
       document.getElementById('transport-frame-readout').textContent = '0 / 0 F';
       document.getElementById('transport-scrubber').value = '0';
@@ -795,10 +875,10 @@ class HangarApp {
     if (health?.ok) {
       dot?.classList.remove('offline');
       dot?.classList.remove('busy');
-      if (label) label.textContent = `ACBridge ${health.engine || ''} · ${health.engine_info?.ready ? '就绪' : '依赖未就绪'}`;
+      if (label) label.textContent = `ACBridge ${health.engine || ''} · ${health.engine_info?.ready ? t('app.engineReady') : t('app.engineDeps')}`;
     } else {
       dot?.classList.add('offline');
-      if (label) label.textContent = '本地服务未连接 (离线模式)';
+      if (label) label.textContent = t('app.offlineMode');
     }
   }
 
@@ -809,10 +889,10 @@ class HangarApp {
     };
 
     setTxt('hud-stat-meshes', stats.meshes);
-    setTxt('hud-stat-tris', stats.triangles.toLocaleString());
+    setTxt('hud-stat-tris', (stats.triangles ?? '').toLocaleString());
     setTxt('hud-stat-joints', stats.joints);
     setTxt('hud-stat-size', `${stats.dimensions.x}m × ${stats.dimensions.y}m × ${stats.dimensions.z}m`);
-    setTxt('hud-stat-size-label', stats.sampledMotionBounds ? '动作范围:' : '外形规格:');
+    setTxt('hud-stat-size-label', stats.sampledMotionBounds ? t('app.hudMotionRange') : t('ui.hud.size'));
   }
 
   _showJobOverlay(show, message = '', progress = 0) {
@@ -829,7 +909,7 @@ class HangarApp {
     } else {
       banner.style.display = 'none';
       const cancel=document.getElementById('btn-cancel-build');
-      if (cancel) { cancel.disabled=false; cancel.textContent='取消'; }
+      if (cancel) { cancel.disabled=false; cancel.textContent=t('ui.common.cancel'); }
     }
   }
 
@@ -843,13 +923,13 @@ class HangarApp {
     if (!alertBox) return;
     this._modelErrorCount = (this._modelErrorCount || 0) + 1;
 
-    const text = String(message || '载入未完成，当前场景已保留。').replace(/\s+/g, ' ').trim();
+    const text = String(message || t('app.loadIncomplete')).replace(/\s+/g, ' ').trim();
     const trace = details
       ? (typeof details === 'object' ? JSON.stringify({ message: text, details }, null, 2) : String(details))
       : '';
 
     alertBox.style.display = 'flex';
-    if (titleEl) titleEl.textContent = options.title || '载入未完成 · 当前场景已保留';
+    if (titleEl) titleEl.textContent = options.title || t('ui.error.loadTitle');
     if (msgEl) msgEl.textContent = text;
     if (diagnosticsEl) diagnosticsEl.open = false;
     if (detailsEl) {
@@ -869,7 +949,7 @@ class HangarApp {
     if (alertBox) {
       alertBox.style.display = 'none';
       const titleEl = alertBox.querySelector('.alert-title');
-      if (titleEl) titleEl.textContent = '载入未完成 · 当前场景已保留';
+      if (titleEl) titleEl.textContent = t('ui.error.loadTitle');
     }
     const detailsEl = document.getElementById('model-error-details');
     if (detailsEl) detailsEl.textContent = '';
@@ -904,7 +984,8 @@ class HangarApp {
   }
 }
 
-// 页面 DOM 加载完毕后启动应用
+// 页面 DOM 加载完毕后启动应用（i18n 需先于组件初始化应用静态文案）
 window.addEventListener('DOMContentLoaded', () => {
+  i18nInit();
   window.hangarApp = new HangarApp();
 });

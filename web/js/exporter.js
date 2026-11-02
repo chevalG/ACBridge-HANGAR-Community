@@ -5,12 +5,14 @@
 
 import { api } from './api.js';
 import { jobPercent } from './dom.js';
+import { t, applyDOM } from './i18n.js';
+import './strings-exporter.js';
 
 export class AssetExporter {
   constructor(modalId, options = {}) {
     this.modal = document.getElementById(modalId);
     if (!this.modal) {
-      throw new Error(`找不到导出模态框 #${modalId}`);
+      throw new Error(t('exporter.modalNotFound', { id: modalId }));
     }
 
     this.currentJobId = null;
@@ -31,43 +33,43 @@ export class AssetExporter {
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            机甲资产导出向导 (GLB)
+            <span data-i18n="exporter.title">${t('exporter.title')}</span>
           </span>
           <button class="modal-close-btn" data-action="close">&times;</button>
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label class="form-label">导出目标文件夹</label>
+            <label class="form-label" data-i18n="exporter.dirLabel">${t('exporter.dirLabel')}</label>
             <div class="input-with-button">
-              <input type="text" id="input-export-dir" placeholder="选择可写的本地导出目录" value="" />
-              <button id="btn-browse-export-dir" class="btn-cyan">选择目录...</button>
+              <input type="text" id="input-export-dir" placeholder="${t('exporter.dirPlaceholder')}" data-i18n-placeholder="exporter.dirPlaceholder" value="" />
+              <button id="btn-browse-export-dir" class="btn-cyan" data-i18n="exporter.pickDir">${t('exporter.pickDir')}</button>
             </div>
-            <span class="form-hint">导出的模型将保留蒙皮、骨骼结构与已绑定的原版 HKX 动作通道</span>
+            <span class="form-hint" data-i18n="exporter.dirHint">${t('exporter.dirHint')}</span>
           </div>
 
           <div class="form-group">
-            <label class="form-label">导出模型文件名 (.glb)</label>
-            <input type="text" id="input-export-filename" placeholder="例如：AC6_Assembled_Mech.glb" value="AC6_Mech_Assembly.glb" />
+            <label class="form-label" data-i18n="exporter.filenameLabel">${t('exporter.filenameLabel')}</label>
+            <input type="text" id="input-export-filename" placeholder="${t('exporter.filenamePlaceholder')}" data-i18n-placeholder="exporter.filenamePlaceholder" value="AC6_Mech_Assembly.glb" />
           </div>
 
           <!-- 待导出资产参数与实测指标检查清单 -->
           <div class="form-group">
-            <label class="form-label">资产规格与实测指标查验</label>
+            <label class="form-label" data-i18n="exporter.statsLabel">${t('exporter.statsLabel')}</label>
             <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 10px 14px; font-family: var(--font-mono); font-size: 11px; display: flex; flex-direction: column; gap: 4px;">
               <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-muted);">蒙皮网格数量:</span>
+                <span style="color: var(--text-muted);" data-i18n="exporter.statMeshes">${t('exporter.statMeshes')}</span>
                 <span id="export-stat-meshes" style="color: #fff;">-</span>
               </div>
               <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-muted);">三角面总数:</span>
+                <span style="color: var(--text-muted);" data-i18n="exporter.statTriangles">${t('exporter.statTriangles')}</span>
                 <span id="export-stat-triangles" style="color: #fff;">-</span>
               </div>
               <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-muted);">骨骼关节数量 (Joints):</span>
+                <span style="color: var(--text-muted);" data-i18n="exporter.statJoints">${t('exporter.statJoints')}</span>
                 <span id="export-stat-joints" style="color: #fff;">-</span>
               </div>
               <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-muted);">包含原版动画剪辑:</span>
+                <span style="color: var(--text-muted);" data-i18n="exporter.statAnims">${t('exporter.statAnims')}</span>
                 <span id="export-stat-anims" style="color: var(--accent-cyan);">-</span>
               </div>
             </div>
@@ -75,16 +77,16 @@ export class AssetExporter {
 
           <!-- 大规模选择与分批计划 -->
           <div class="form-group" id="export-plan-group" style="display: none;">
-            <label class="form-label">本次导出范围（数量不限，按实测字节预算分批）</label>
+            <label class="form-label" data-i18n="exporter.scopeLabel">${t('exporter.scopeLabel')}</label>
             <div id="export-plan-box" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 10px 14px; font-family: var(--font-mono); font-size: 11px; display: flex; flex-direction: column; gap: 4px; color: var(--text-secondary);"></div>
             <div style="display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap;">
-              <label class="filter-checkbox-label" title="按当前装配任务实际解析的动画集合导出">
+              <label class="filter-checkbox-label" title="${t('exporter.scopeFirstTip')}" data-i18n-title="exporter.scopeFirstTip">
                 <input type="radio" name="export-scope" id="export-scope-first" checked />
-                仅导出当前预览模型已烘焙的动画
+                <span data-i18n="exporter.scopeFirst">${t('exporter.scopeFirst')}</span>
               </label>
-              <label class="filter-checkbox-label" title="包含被延后、尚未烘焙进预览模型的选择">
+              <label class="filter-checkbox-label" title="${t('exporter.scopeAllTip')}" data-i18n-title="exporter.scopeAllTip">
                 <input type="radio" name="export-scope" id="export-scope-all" />
-                导出全部选择（含延后项）
+                <span data-i18n="exporter.scopeAll">${t('exporter.scopeAll')}</span>
               </label>
             </div>
           </div>
@@ -92,7 +94,7 @@ export class AssetExporter {
           <!-- 导出进度区 -->
           <div id="export-progress-wrap" style="display: none; flex-direction: column; gap: 8px;">
             <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: var(--font-mono);">
-              <span id="export-stage-text">准备导出...</span>
+              <span id="export-stage-text">${t('exporter.ready')}</span>
               <span id="export-pct-text">0%</span>
             </div>
             <div class="progress-bar-track">
@@ -104,19 +106,20 @@ export class AssetExporter {
           </div>
         </div>
         <div class="modal-footer">
-          <button class="modal-close-btn-secondary" data-action="close">关闭</button>
-          <button id="btn-cancel-export" class="btn-mini" style="display: none;">取消导出</button>
+          <button class="modal-close-btn-secondary" data-action="close" data-i18n="exporter.close">${t('exporter.close')}</button>
+          <button id="btn-cancel-export" class="btn-mini" style="display: none;" data-i18n="exporter.cancel">${t('exporter.cancel')}</button>
           <button id="btn-do-export" class="btn-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            立即执行导出
+            <span data-i18n="exporter.run">${t('exporter.run')}</span>
           </button>
         </div>
       </div>
     `;
+    applyDOM(this.modal);
   }
 
   _bindEvents() {
@@ -149,7 +152,7 @@ export class AssetExporter {
         try {
           const handle = await window.showDirectoryPicker();
           if (handle && handle.name) {
-            alert(`已选定文件夹: "${handle.name}"。请在输入框确认实际绝对路径。`);
+            alert(t('exporter.dirPicked', { name: handle.name }));
           }
         } catch (_) {}
       }
@@ -164,11 +167,11 @@ export class AssetExporter {
     btnCancel.addEventListener('click', async () => {
       if (!this.activeExportJobId) return;
       btnCancel.disabled = true;
-      btnCancel.textContent = '正在取消…';
+      btnCancel.textContent = t('exporter.cancelling');
       try {
         await api.cancelJob(this.activeExportJobId);
       } catch (err) {
-        alert(`取消失败：${err.message}`);
+        alert(t('exporter.cancelFailed', { msg: err.message }));
       }
     });
   }
@@ -211,9 +214,9 @@ export class AssetExporter {
     }
 
     setTxt('#export-stat-anims', animNames.length > 0
-      ? (animNames.length > 6 ? `${animNames.length} 条动画通道（${animNames.slice(0, 6).join(', ')} …）`
+      ? (animNames.length > 6 ? t('exporter.animsMany', { count: animNames.length, samples: animNames.slice(0, 6).join(', ') })
                               : animNames.join(', '))
-      : '无独立动画');
+      : t('exporter.noAnims'));
   }
 
   /**
@@ -234,19 +237,21 @@ export class AssetExporter {
       if (value >= 1024 ** 2) return `${(value / 1024 ** 2).toFixed(1)} MB`;
       return `${Math.round(value / 1024)} KB`;
     };
-    lines.push(`已解析动画：${plan.resolved_clip_ids?.length ?? 0} 段 · ` +
-               `关键帧合计：${(plan.estimate?.frames ?? 0).toLocaleString()}`);
-    lines.push(`预计单文件体积：${mb(plan.estimate?.estimated_bytes)}`);
+    lines.push(t('exporter.planResolved', {
+      count: plan.resolved_clip_ids?.length ?? 0,
+      frames: (plan.estimate?.frames ?? 0).toLocaleString()
+    }));
+    lines.push(t('exporter.planSize', { size: mb(plan.estimate?.estimated_bytes) }));
     if (plan.mode === 'single') {
-      lines.push(`导出方式：单文件 GLB（1 个文件）`);
+      lines.push(t('exporter.planSingle'));
     } else {
-      lines.push(`导出方式：分批 GLB（${plan.packets} 个文件，按 ${mb(plan.budget?.max_bytes)} 预算拆分）`);
+      lines.push(t('exporter.planPackets', { packets: plan.packets, budget: mb(plan.budget?.max_bytes) }));
     }
     if (selection.deferred) {
-      lines.push(`预览模型已烘焙：${selection.previewed} 段；延后：${selection.deferred} 段`);
+      lines.push(t('exporter.planDeferred', { previewed: selection.previewed, deferred: selection.deferred }));
     }
     if (selection.unresolved?.length) {
-      lines.push(`未解析（不会阻断装配）：${selection.unresolved.map(u => u.clip_id).slice(0, 5).join(', ')}`);
+      lines.push(t('exporter.planUnresolved', { ids: selection.unresolved.map(u => u.clip_id).slice(0, 5).join(', ') }));
     }
     box.innerHTML = lines.map(l => `<div>${l}</div>`).join('');
     const scopeAll = this.modal.querySelector('#export-scope-all');
@@ -269,7 +274,7 @@ export class AssetExporter {
     const nameVal = this.modal.querySelector('#input-export-filename').value.trim();
 
     if (!dirVal) {
-      alert('请指定导出目标文件夹绝对路径');
+      alert(t('exporter.dirRequired'));
       return;
     }
 
@@ -286,22 +291,22 @@ export class AssetExporter {
     resultBox.style.display = 'none';
     bar.style.width = '10%';
     pctText.textContent = '10%';
-    stageText.textContent = '正在启动资产导出通道...';
+    stageText.textContent = t('exporter.starting');
 
     const btnCancel = this.modal.querySelector('#btn-cancel-export');
     btnCancel.style.display = '';
     btnCancel.disabled = false;
-    btnCancel.textContent = '取消导出';
+    btnCancel.textContent = t('exporter.cancel');
     bar.style.backgroundColor = '';
 
     try {
       if (!api.isConnected) {
-        throw new Error('本地机库服务未连接，无法执行后端 GLB 打包');
+        throw new Error(t('exporter.disconnected'));
       }
 
-      if (!this.currentJobId) throw new Error('请先完成一次机体装配，再导出当前模型。');
+      if (!this.currentJobId) throw new Error(t('exporter.needBuild'));
       const scopeAll = this.modal.querySelector('#export-scope-all')?.checked;
-      stageText.textContent = '向后端提交导出请求...';
+      stageText.textContent = t('exporter.submitting');
 
       const res = await api.exportSelection({
         source_job: this.currentJobId,
@@ -313,18 +318,18 @@ export class AssetExporter {
       });
       const exportJobId = res.job_id;
       this.activeExportJobId = exportJobId;
-      stageText.textContent = `导出任务执行中 [${exportJobId}]...`;
+      stageText.textContent = t('exporter.jobRunning', { id: exportJobId });
 
       const completed = await api.pollJob(exportJobId, job => {
         const pct = jobPercent(job);
         bar.style.width = `${Math.max(10, pct)}%`;
         pctText.textContent = `${pct}%`;
-        stageText.textContent = job.message || job.stage || '正在打包 GLB 二进制流...';
+        stageText.textContent = job.message || job.stage || t('exporter.packing');
       });
 
       bar.style.width = '100%';
       pctText.textContent = '100%';
-      stageText.textContent = '资产导出完成！';
+      stageText.textContent = t('exporter.done');
 
       resultBox.style.display = 'block';
       const result = completed.result || {};
@@ -332,25 +337,25 @@ export class AssetExporter {
       resultBox.style.whiteSpace = 'pre-wrap';
       const files = result.files || (result.glb ? [{name:result.glb,bytes:result.bytes,sha256:result.sha256,animations:result.artifact?.animation_count}] : []);
       const fileLines = files.map(f =>
-        `${f.name} · ${(f.bytes || 0).toLocaleString()} 字节 · ${f.animations ?? '?'} 条动画轨 · SHA-256 ${(f.sha256 || '').slice(0, 12)}…`);
+        t('exporter.fileLine', { name: f.name, bytes: (f.bytes || 0).toLocaleString(), tracks: f.animations ?? '?', sha: (f.sha256 || '').slice(0, 12) }));
       const failures = result.failures || [];
       resultBox.textContent = [
-        `导出完成：${files.length} 个文件，覆盖 ${result.covered_clips ?? result.requested_clips ?? 0} 段动画`,
+        t('exporter.doneSummary', { files: files.length, clips: result.covered_clips ?? result.requested_clips ?? 0 }),
         ...fileLines,
-        failures.length ? `${failures.length} 批失败（其余批次已成功）：` +
-          failures.map(f => `第 ${f.packet} 批 / ${f.code}`).join('，') : '',
-        `清单：${result.manifest || '-'}`,
-        '动态外观：not_verified（视觉正确性仍需人工复核）'
+        failures.length ? t('exporter.failedBatches', { count: failures.length }) +
+          failures.map(f => t('exporter.failedBatchItem', { packet: f.packet, code: f.code })).join(t('exporter.failedBatchSep')) : '',
+        t('exporter.manifest', { path: result.manifest || '-' }),
+        t('exporter.appearanceNote')
       ].filter(Boolean).join('\n');
     } catch (err) {
-      stageText.textContent = err.code === 'cancelled' || err.message?.includes('取消')
-        ? '已取消导出' : '导出失败';
+      stageText.textContent = err.code === 'cancelled' || /取消|cancel/i.test(err.message || '')
+        ? t('exporter.cancelled') : t('exporter.failed');
       bar.style.backgroundColor = 'var(--accent-crimson)';
       if (err.code === 'cancelled') {
         resultBox.style.display = 'block';
-        resultBox.textContent = '已取消导出：已完成的文件保留在目标目录，未完成的批次没有写入。';
+        resultBox.textContent = t('exporter.cancelledDetail');
       } else {
-        alert(`资产导出发生错误: ${err.message}`);
+        alert(t('exporter.errorAlert', { msg: err.message }));
       }
     } finally {
       this.isExporting = false;

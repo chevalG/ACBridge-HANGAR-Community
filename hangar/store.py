@@ -2,6 +2,13 @@ import copy
 import threading
 from pathlib import Path
 
+from . import i18n
+
+i18n.register('store', {
+    'zh-CN': {'emptyCatalog': '尚未导入资源目录。'},
+    'en': {'emptyCatalog': 'No resource directory imported yet.'},
+})
+
 from .util import atomic_write_json, new_id, now_iso, read_json
 
 SETTINGS_SCHEMA = 1
@@ -26,7 +33,9 @@ def default_settings():
     }
 
 
-def empty_catalog(reason='尚未导入资源目录。'):
+def empty_catalog(reason=None):
+    if reason is None:
+        reason = i18n.t('store.emptyCatalog')
     return {
         'schema_version': CATALOG_SCHEMA,
         'status': 'empty',

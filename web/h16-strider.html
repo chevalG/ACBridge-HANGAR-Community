@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ACBridge HANGAR · H17 阔步者构图</title>
+  <script type="module" src="./js/strings-coverage.js"></script>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./css/h16-strider.css">
   <script type="importmap">
@@ -12,46 +13,62 @@
 </head>
 <body>
   <header class="topbar">
-    <div><a href="/">← HANGAR</a><span class="kicker">H17 · STRIDER</span><h1>阔步者 · 原版地图构图</h1></div>
-    <div class="basis">MSB 地图摆放候选 · C6400/C6420 独立动作 · 非游戏事件同步</div>
+    <div><a href="/" data-i18n="strider.back">← HANGAR</a><span class="kicker">H17 · STRIDER</span><h1 data-i18n="strider.h1">阔步者 · 原版地图构图</h1></div>
+    <div class="basis" data-i18n="strider.basis">MSB 地图摆放候选 · C6400/C6420 独立动作 · 非游戏事件同步</div>
+    <div style="display:flex;gap:4px;margin-left:12px"><button id="lang-zh" style="cursor:pointer">中文</button><button id="lang-en" style="cursor:pointer">EN</button></div>
   </header>
   <main>
     <section class="viewport-wrap">
       <div id="walker-viewport"></div>
-      <div class="viewport-tag" id="viewport-tag">正在读取本地馆藏…</div>
+      <div class="viewport-tag" id="viewport-tag" data-i18n="strider.readingLibrary">正在读取本地馆藏…</div>
       <div class="viewport-actions">
-        <button id="btn-frame-all">全景取景</button>
-        <button id="btn-frame-body">聚焦主体</button>
+        <button id="btn-frame-all" data-i18n="strider.frameAll">全景取景</button>
+        <button id="btn-frame-body" data-i18n="strider.frameBody">聚焦主体</button>
       </div>
     </section>
     <aside class="panel">
       <section class="card">
-        <h2>场景证据</h2>
-        <label for="map-select">原版地图</label>
+        <h2 data-i18n="strider.sceneEvidence">场景证据</h2>
+        <label for="map-select" data-i18n="strider.nativeMap">原版地图</label>
         <select id="map-select"></select>
         <div id="scene-facts" class="facts"></div>
-        <p class="note">场景保留 MSB 中 C6400 和 C6420 各自的实体变换与间距。地图记录证明它们同图摆放，不足以证明机械连接或同步行为。</p>
+        <p class="note" data-i18n="strider.sceneNote">场景保留 MSB 中 C6400 和 C6420 各自的实体变换与间距。地图记录证明它们同图摆放，不足以证明机械连接或同步行为。</p>
       </section>
       <section class="card">
-        <h2>独立动作预览</h2>
-        <label for="motion-mode">转换模式</label>
-        <select id="motion-mode"><option value="free">自由预览</option><option value="strict">严格模式</option></select>
+        <h2 data-i18n="strider.motionPreview">独立动作预览</h2>
+        <label for="motion-mode" data-i18n="strider.motionMode">转换模式</label>
+        <select id="motion-mode"><option value="free" data-i18n="strider.modeFree">自由预览</option><option value="strict" data-i18n="strider.modeStrict">严格模式</option></select>
         <div class="actor-select">
-          <div><label for="body-clip">C6400 主体与可映射钻柱骨骼</label><select id="body-clip"></select></div>
-          <div><label for="eye-clip">C6420 Eye 独立动作</label><select id="eye-clip"></select></div>
+          <div><label for="body-clip" data-i18n="strider.bodyClipLabel">C6400 主体与可映射钻柱骨骼</label><select id="body-clip"></select></div>
+          <div><label for="eye-clip" data-i18n="strider.eyeClipLabel">C6420 Eye 独立动作</label><select id="eye-clip"></select></div>
         </div>
-        <button id="btn-load-play" class="primary">加载 / 播放选中动作</button>
-        <div id="job-status" class="job-status" role="status">动作按需转换；成功后切换，失败时保留当前构图。</div>
+        <button id="btn-load-play" class="primary" data-i18n="strider.loadPlay">加载 / 播放选中动作</button>
+        <div id="job-status" class="job-status" role="status" data-i18n="strider.jobStatusIdle">动作按需转换；成功后切换，失败时保留当前构图。</div>
       </section>
       <section class="card transport">
-        <h2>归一化时间轴</h2>
-        <div class="transport-row"><button id="btn-play" disabled>播放</button><input id="seek" type="range" min="0" max="1000" value="0" disabled><span id="time-readout">0%</span></div>
-        <div class="transport-row"><label for="speed">速度</label><select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></div>
-        <p class="note">时间轴将两段独立 HKX 按各自时长映射到同一进度，便于并排观察；不代表原版行为图或事件同步。</p>
+        <h2 data-i18n="strider.timeline">归一化时间轴</h2>
+        <div class="transport-row"><button id="btn-play" disabled data-i18n="strider.play">播放</button><input id="seek" type="range" min="0" max="1000" value="0" disabled><span id="time-readout">0%</span></div>
+        <div class="transport-row"><label for="speed" data-i18n="strider.speed">速度</label><select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></div>
+        <p class="note" data-i18n="strider.timelineNote">时间轴将两段独立 HKX 按各自时长映射到同一进度，便于并排观察；不代表原版行为图或事件同步。</p>
       </section>
-      <details class="card diagnostics"><summary>动作与装配诊断</summary><div id="dynamic-proof" class="facts">加载动作后显示。</div></details>
+      <details class="card diagnostics"><summary data-i18n="strider.diagnostics">动作与装配诊断</summary><div id="dynamic-proof" class="facts" data-i18n="strider.proofIdle">加载动作后显示。</div></details>
     </aside>
   </main>
+  <script type="module">
+    import { t, applyDOM, init as i18nInit, setLang, lang } from './js/i18n.js';
+    import './js/strings-coverage.js';
+    i18nInit();
+    applyDOM(document);
+    document.title = t('strider.title');
+    const syncLangButtons = () => {
+      document.getElementById('lang-zh')?.classList.toggle('active', lang() === 'zh-CN');
+      document.getElementById('lang-en')?.classList.toggle('active', lang() === 'en');
+    };
+    syncLangButtons();
+    for (const [id, value] of [['lang-zh', 'zh-CN'], ['lang-en', 'en']]) {
+      document.getElementById(id)?.addEventListener('click', () => { setLang(value); location.reload(); });
+    }
+  </script>
   <script type="module" src="./js/h16-strider.js"></script>
 </body>
 </html>

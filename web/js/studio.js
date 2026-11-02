@@ -5,6 +5,8 @@
 
 import { api } from './api.js';
 import { escapeHtml, jobPercent } from './dom.js';
+import { t, applyDOM, lang } from './i18n.js';
+import './strings-studio.js';
 import { motionPage } from './motion-page.mjs';
 import {arrangeLibrary} from './feature-modules.js';
 import { IdentityCatalog, IdentityEditor } from './identity.js';
@@ -65,7 +67,8 @@ export class HangarStudio {
       const shortcut=document.createElement('button');
       shortcut.id='btn-wizard-open-library';
       shortcut.className='btn-inspect-return';
-      shortcut.textContent='浏览敌方模型或武器：前往工业馆藏';
+      shortcut.setAttribute('data-i18n','studio.wizardShortcut');
+      shortcut.textContent=t('studio.wizardShortcut');
       shortcut.addEventListener('click',()=>{if (!this.app.wizardModal.isImporting) {this.app.wizardModal.close();this.switchMode('library');}});
       wizardBody.prepend(shortcut);
     }
@@ -74,7 +77,7 @@ export class HangarStudio {
     try {
       await this.refreshLibrary();
     } catch (err) {
-      console.warn('[Studio] 初始馆藏读取跳过:', err.message);
+      console.warn('[Studio] initial library fetch skipped:', err.message);
     }
   }
 
@@ -156,12 +159,12 @@ export class HangarStudio {
       try {
         await this.identities.refresh();
       } catch (err) {
-        console.warn('[Studio] 身份目录同步跳过:', err.message);
+        console.warn('[Studio] identity catalog sync skipped:', err.message);
       }
 
       this._updateLibraryUI();
     } catch (err) {
-      console.warn('[Studio] 馆藏接口同步离线:', err.message);
+      console.warn('[Studio] library API offline:', err.message);
     }
   }
 
@@ -178,7 +181,12 @@ export class HangarStudio {
 
     const summaryEl = document.getElementById('header-library-summary');
     if (summaryEl) {
-      summaryEl.textContent = `馆藏: ${total} (玩家 ${counts.player || 0} · 敌机 ${counts.enemy || 0} · 武器 ${counts.weapon || 0})`;
+      summaryEl.textContent = t('studio.headerSummary', {
+        total,
+        player: counts.player || 0,
+        enemy: counts.enemy || 0,
+        weapon: counts.weapon || 0
+      });
     }
 
     // 分类选项卡数字
@@ -246,14 +254,14 @@ export class HangarStudio {
           if (rootInput) rootInput.value = dialogRes.path;
         }
       } catch (err) {
-        this.app._showToast(`唤起文件夹对话框失败: ${err.message}`, 'error');
+        this.app._showToast(t('studio.folderDialogFailed', { msg: err.message }), 'error');
       }
     });
 
     importBtn?.addEventListener('click', async () => {
       const path = rootInput?.value?.trim();
       if (!path) {
-        this.app._showToast('请先输入或浏览选择包含 FLVER 的资源目录', 'info');
+        this.app._showToast(t('studio.importNeedsRoot'), 'info');
         return;
       }
       await this.importRoots([path]);
@@ -267,7 +275,7 @@ export class HangarStudio {
   async importRoots(roots) {
     if (this.isOperating) return;
     this.isOperating = true;
-    this.app._showJobOverlay(true, '提交馆藏深度索引作业...', 10);
+    this.app._showJobOverlay(true, t('studio.importSubmitting'), 10);
 
     try {
       const res = await fetch(`${window.location.origin}/api/library/import`, {
@@ -283,34 +291,34 @@ export class HangarStudio {
       const jobId = data.job_id;
       this.activeJobId = jobId;
 
-      this.app._showJobOverlay(true, `正在深度扫描目录并比对 FLVER 骨骼...`, 20);
+      this.app._showJobOverlay(true, t('studio.importScanning'), 20);
 
       // 轮询作业直到完成
       const completedJob = await api.pollJob(jobId, job => {
         const pct = jobPercent(job);
-        this.app._showJobOverlay(true, `[${job.stage || '扫描中'}] ${job.message || '正在索引...'}`, Math.max(15, pct));
+        this.app._showJobOverlay(true, t('studio.jobStageMessage', { stage: job.stage || t('studio.stageScanning'), message: job.message || t('studio.jobIndexing') }), Math.max(15, pct));
       });
 
       this.app._showJobOverlay(false);
-      this.app._showToast('馆藏目录扫描完成，模型索引已更新！', 'success');
+      this.app._showToast(t('studio.importDone'), 'success');
       await this.refreshLibrary();
       if ((completedJob.result?.counts?.player || 0)>0) {
         try {
           const imported=await api.importResources(this.libraryData.roots,'expanded');
           this.activeJobId=imported.job_id;
-          await api.pollJob(imported.job_id,job=>this.app._showJobOverlay(true,'正在建立玩家装配与 HKX 目录…',jobPercent(job)));
+          await api.pollJob(imported.job_id,job=>this.app._showJobOverlay(true,t('studio.buildingPlayerCatalog'),jobPercent(job)));
           await this.app.refreshState();
-          this.app._showToast('玩家部件与动作已加入整备工坊。','success');
+          this.app._showToast(t('studio.playerCatalogAdded'),'success');
         } catch (err) {
-          this.app._showToast(`馆藏已保存；整备目录未更新：${err.message}`,'info');
+          this.app._showToast(t('studio.catalogSyncFailed',{msg:err.message}),'info');
         }
       }
     } catch (err) {
       this.app._showJobOverlay(false);
       if (err.code === 'cancelled') {
-        this.app._showToast('馆藏扫描已取消，现有索引保持不变。', 'info');
+        this.app._showToast(t('studio.scanCancelled'), 'info');
       } else {
-        this.app._showToast(`馆藏扫描失败: ${err.message}`, 'error');
+        this.app._showToast(t('studio.scanFailed', { msg: err.message }), 'error');
       }
     } finally {
       this.isOperating = false;
@@ -382,7 +390,7 @@ export class HangarStudio {
     if (filtered.length === 0) {
       container.innerHTML = `
         <div style="padding: 24px; text-align: center; color: var(--c-porcelain-muted); font-size: 11px;">
-          未检索到符合条件的馆藏资产
+          ${t('studio.noMatch')}
         </div>
       `;
       return;
@@ -393,14 +401,14 @@ export class HangarStudio {
       const isPreview = this.previewedAsset?.id === asset.id;
       const bytesFmt = this._formatBytes(asset.bytes);
       const typeLabel = asset.kind === 'player'
-        ? (asset.slot ? `部件 · ${escapeHtml(asset.slot)}` : '机体部件')
-        : asset.kind === 'enemy' ? '敌机 / BOSS'
-        : '军械装备';
+        ? (asset.slot ? t('studio.typePart', { slot: escapeHtml(asset.slot) }) : t('studio.typePlayer'))
+        : asset.kind === 'enemy' ? t('studio.typeEnemy')
+        : t('studio.typeWeapon');
       const statusText = asset.verification === 'conversion_failed'
-        ? '转换失败'
+        ? t('studio.statusConversionFailed')
         : asset.verification === 'glb_validated'
-          ? 'GLB 已校验'
-          : '源已发现待转换';
+          ? t('studio.statusGlbValidated')
+          : t('studio.statusPendingConversion');
       const identitySummary = this.identities?.summary(asset);
 
       return `
@@ -413,30 +421,31 @@ export class HangarStudio {
               </div>
               <div class="asset-card-id-row">
                 <span class="asset-card-rid">${escapeHtml(asset.resource_id)}</span>
-                ${identitySummary ? `<span class="asset-card-identity" title="馆藏身份">${escapeHtml(identitySummary)}</span>` : ''}
+                ${identitySummary ? `<span class="asset-card-identity" data-i18n-title="studio.identityTitle" title="${t('studio.identityTitle')}">${escapeHtml(identitySummary)}</span>` : ''}
               </div>
             </div>
             <div class="asset-card-actions">
-              <button type="button" class="btn-card-preview ${isPreview ? 'is-previewing' : ''}" data-id="${escapeHtml(asset.id)}" title="${isPreview ? '正在视窗中预览' : '点击执行 3D 独立模型预览'}">
+              <button type="button" class="btn-card-preview ${isPreview ? 'is-previewing' : ''}" data-id="${escapeHtml(asset.id)}" title="${isPreview ? t('studio.previewActiveTitle') : t('studio.previewIdleTitle')}">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
                   <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
-                <span>${isPreview ? '预览中' : '预览'}</span>
+                <span>${isPreview ? t('studio.previewing') : t('studio.preview')}</span>
               </button>
             </div>
           </div>
           <details class="card-diagnostics" onclick="event.stopPropagation()">
-            <summary class="card-diagnostics-summary">技术诊断</summary>
+            <summary class="card-diagnostics-summary" data-i18n="studio.diagnosticsSummary">${t('studio.diagnosticsSummary')}</summary>
             <div class="card-diagnostics-body">
-              <span class="diag-chip">状态: ${statusText}</span>
-              <span class="diag-chip">体积: ${bytesFmt}</span>
-              <span class="diag-chip">格式: GLB 2.0</span>
-              <span class="diag-chip" title="${escapeHtml(asset.sha256)}">哈希: ${escapeHtml(asset.sha256 ? asset.sha256.slice(0, 10) + '…' : '-')}</span>
+              <span class="diag-chip">${t('studio.diagStatus')} ${statusText}</span>
+              <span class="diag-chip">${t('studio.diagSize')} ${bytesFmt}</span>
+              <span class="diag-chip" data-i18n="studio.diagFormat">${t('studio.diagFormat')}</span>
+              <span class="diag-chip" title="${escapeHtml(asset.sha256)}">${t('studio.diagHash')} ${escapeHtml(asset.sha256 ? asset.sha256.slice(0, 10) + '…' : '-')}</span>
             </div>
           </details>
         </div>
       `;
     }).join('');
+    applyDOM(container);
 
     // 绑定点击选中与直接预览操作
     container.querySelectorAll('.asset-card').forEach(card => {
@@ -472,23 +481,20 @@ export class HangarStudio {
         <polyline points="2 17 12 22 22 17"></polyline>
         <polyline points="2 12 12 17 22 12"></polyline>
       </svg>
-      <div class="empty-guide-title">工业馆藏档案库未建立</div>
+      <div class="empty-guide-title" data-i18n="studio.emptyTitle">${t('studio.emptyTitle')}</div>
       <div class="empty-guide-text">
-        <p style="margin-bottom: 6px;">当前资料库中尚未索引到真实机体、敌机或武器 FLVER 模型。</p>
+        <p style="margin-bottom: 6px;" data-i18n="studio.emptyIntro">${t('studio.emptyIntro')}</p>
         <ul style="padding-left: 16px; margin: 0; line-height: 1.7;">
-          <li><b>馆藏导入</b>：在上方输入框填入展开的资源路径（如 <code>data/local-inputs</code>）并点击「导入馆藏」。</li>
-          <li><b>整备向导</b>：若需装配具备真实 HKX 骨骼动作的机甲，可使用顶栏「资源导入向导」。</li>
+          <li><b data-i18n="studio.guideImportLabel">${t('studio.guideImportLabel')}</b><span data-i18n="studio.guideImportBefore">${t('studio.guideImportBefore')}</span><code>data/local-inputs</code><span data-i18n="studio.guideImportAfter">${t('studio.guideImportAfter')}</span></li>
+          <li><b data-i18n="studio.guideWizardLabel">${t('studio.guideWizardLabel')}</b><span data-i18n="studio.guideWizardText">${t('studio.guideWizardText')}</span></li>
         </ul>
       </div>
       <div class="empty-guide-actions">
-        <button id="btn-guide-quick-input" class="btn-inspect-primary" style="font-size: 11px;">
-          一键载入本地演示资源 (data/local-inputs)
-        </button>
-        <button id="btn-guide-open-wizard" class="btn-inspect-return" style="font-size: 11px;">
-          打开机体装配向导 (H05 Wizard)
-        </button>
+        <button id="btn-guide-quick-input" class="btn-inspect-primary" style="font-size: 11px;" data-i18n="studio.guideQuickInput">${t('studio.guideQuickInput')}</button>
+        <button id="btn-guide-open-wizard" class="btn-inspect-return" style="font-size: 11px;" data-i18n="studio.guideOpenWizard">${t('studio.guideOpenWizard')}</button>
       </div>
     `;
+    applyDOM(guideEl);
 
     document.getElementById('btn-guide-quick-input')?.addEventListener('click', () => {
       const input = document.getElementById('library-root-input');
@@ -546,25 +552,25 @@ export class HangarStudio {
     if (!asset) {
       panel.innerHTML = `
         <div style="padding: 40px 16px; text-align: center; color: var(--c-porcelain-muted);">
-          请在左侧选择要检视的馆藏资产
+          ${t('studio.inspectorEmpty')}
         </div>
       `;
       return;
     }
 
-    const kindLabel = asset.kind === 'player' ? '机体部件 (PLAYER)'
-      : asset.kind === 'enemy' ? '敌机 / BOSS (ENEMY)'
-      : '军械装备 (WEAPON)';
+    const kindLabel = asset.kind === 'player' ? t('studio.kindPlayer')
+      : asset.kind === 'enemy' ? t('studio.kindEnemy')
+      : t('studio.kindWeapon');
 
     const mounted = Boolean(this.mountedJobId && this.mountedJobId === this.previewedJobId);
     const isCurrentPreview = this.previewedAsset?.id === asset.id || mounted;
     const verifiedMountSlots = asset.mount_slots || [];
 
     const ALL_SLOTS = [
-      { id: 'right_hand', label: '右手 (R-Arm)' },
-      { id: 'left_hand', label: '左手 (L-Arm)' },
-      { id: 'right_back', label: '右肩 (R-Back)' },
-      { id: 'left_back', label: '左肩 (L-Back)' }
+      { id: 'right_hand', label: t('studio.slotRightHand') },
+      { id: 'left_hand', label: t('studio.slotLeftHand') },
+      { id: 'right_back', label: t('studio.slotRightBack') },
+      { id: 'left_back', label: t('studio.slotLeftBack') }
     ];
 
     const hasAdjustments = (this.mountAdjustment.translation.some(v => v !== 0) || this.mountAdjustment.rotation.some(v => v !== 0));
@@ -580,33 +586,33 @@ export class HangarStudio {
         <div class="inspector-tag-row">
           <span class="inspector-kind-tag">${kindLabel}</span>
           <span style="font-family: var(--font-mono); font-size: 10px; color: var(--c-ice);">
-            ${asset.slot ? `槽位: ${escapeHtml(asset.slot)}` : ''}
+            ${asset.slot ? t('studio.slotLabel', { slot: escapeHtml(asset.slot) }) : ''}
           </span>
         </div>
         <div class="inspector-asset-name">${escapeHtml(asset.name || asset.resource_id)}</div>
         <div class="inspector-asset-id">${escapeHtml(asset.resource_id)}</div>
       </div>
-      ${asset.kind==='player' && !asset.assembly_available ? '<div class="inspector-card">此资源可独立预览与导出。动画装配输入未齐备：缺少匹配骨架或类型表；不会借用其他部件的骨架。</div>' : ''}
-      ${asset.components?.length ? `<div class="inspector-card">${asset.geometry_completeness==='body_with_components'?'已找到关联部件，将随主体一同预览。':'当前仅有主体；请补充关联资源：'+asset.components.filter(c=>!c.source).map(c=>escapeHtml(c.resource_id)).join('、')}<br><small>${asset.components.every(c=>c.bone_prefix)?'动画仅驱动精确匹配的克隆骨骼；未匹配骨骼保留根姿态。':'静态结构按原版 Dummy 放置；没有已验证的动态附件跟随。'}原游戏动态外观未验证。</small></div>` : ''}
+      ${asset.kind==='player' && !asset.assembly_available ? `<div class="inspector-card" data-i18n="studio.independentNote">${t('studio.independentNote')}</div>` : ''}
+      ${asset.components?.length ? `<div class="inspector-card">${asset.geometry_completeness==='body_with_components'?t('studio.componentsFound'):t('studio.componentsMissing')+asset.components.filter(c=>!c.source).map(c=>escapeHtml(c.resource_id)).join(t('studio.componentsJoiner'))}<br><small>${asset.components.every(c=>c.bone_prefix)?t('studio.cloneBoneNote'):t('studio.staticDummyNote')}${t('studio.dynamicAppearanceUnverified')}</small></div>` : ''}
       ${asset.scene_compositions?.length ? `<div class="inspector-card walker-scene-card">
-        <div class="inspector-card-title">原版地图共场摆放候选</div>
-        <p class="form-hint">C6420 与主体作为独立地图实体出现。保留原始间距和变换用于场景构图；实体共场不证明机械连接或游戏事件同步。</p>
+        <div class="inspector-card-title" data-i18n="studio.sceneCompTitle">${t('studio.sceneCompTitle')}</div>
+        <p class="form-hint" data-i18n="studio.sceneCompHint">${t('studio.sceneCompHint')}</p>
         ${asset.scene_compositions.map(scene=>`<details class="resource-input-details"><summary>${escapeHtml(scene.label||scene.map)} · ${escapeHtml(scene.map)}</summary>
           <p class="form-hint">${escapeHtml(scene.basis||'')}</p>
-          ${scene.actors.map(actor=>`<p class="form-hint">${escapeHtml(actor.resource_id)} Entity ${actor.entity_id} / NPC ${actor.npc_param_id} · 与主体地图距离 ${Math.hypot(...actor.position.map((v,i)=>v-scene.body.position[i])).toFixed(1)} 单位</p>`).join('')}
-          <a class="btn-inspect-return" href="/h16-strider.html?map=${encodeURIComponent(scene.id)}" target="_blank" rel="noopener">打开该地图构图与独立动作时间轴</a>
+          ${scene.actors.map(actor=>`<p class="form-hint">${escapeHtml(actor.resource_id)} Entity ${actor.entity_id} / NPC ${actor.npc_param_id} · ${t('studio.sceneDistance', { distance: Math.hypot(...actor.position.map((v,i)=>v-scene.body.position[i])).toFixed(1) })}</p>`).join('')}
+          <a class="btn-inspect-return" href="/h16-strider.html?map=${encodeURIComponent(scene.id)}" target="_blank" rel="noopener" data-i18n="studio.sceneOpenLink">${t('studio.sceneOpenLink')}</a>
         </details>`).join('')}
       </div>` : ''}
 
       <!-- 核心操作按钮组 -->
       <div class="inspector-actions-group">
-        ${asset.kind === 'player' ? '<button id="btn-inspect-equip" class="btn-inspect-return">将此部件放入整备槽位</button>' : ''}
+        ${asset.kind === 'player' ? `<button id="btn-inspect-equip" class="btn-inspect-return" data-i18n="studio.equipBtn">${t('studio.equipBtn')}</button>` : ''}
         <button type="button" id="btn-inspect-preview" class="btn-inspect-primary">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
             <polygon points="10 8 16 12 10 16 10 8"></polygon>
           </svg>
-          ${isCurrentPreview ? '重新载入该模型预览' : '预览独立 3D 模型'}
+          ${isCurrentPreview ? t('studio.repreviewBtn') : t('studio.preview3dBtn')}
         </button>
 
         ${this.app.lastSuccessfulModelUrl ? `
@@ -615,53 +621,53 @@ export class HangarStudio {
               <polyline points="1 4 1 10 7 10"></polyline>
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
             </svg>
-            返回整备机体 (恢复四槽机甲)
+            <span data-i18n="studio.returnMechBtn">${t('studio.returnMechBtn')}</span>
           </button>
         ` : ''}
 
-        <button type="button" id="btn-inspect-export" class="btn-inspect-export" ${isCurrentPreview ? '' : 'disabled'} title="${isCurrentPreview ? '导出当前预览资产至独立 GLB' : '请先预览该模型后再执行导出'}">
+        <button type="button" id="btn-inspect-export" class="btn-inspect-export" ${isCurrentPreview ? '' : 'disabled'} title="${isCurrentPreview ? t('studio.exportReadyTitle') : t('studio.exportNeedPreviewTitle')}">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          ${mounted?'导出当前武器装配 (GLB)':'导出独立资产 (GLB)'}
+          ${mounted?t('studio.exportMountedBtn'):t('studio.exportStandaloneBtn')}
         </button>
       </div>
 
       <!-- 武器挂载模块 (支持四大槽位、验证/实验性双模式及局部轴微调) -->
       ${asset.kind !== 'player' ? `
         <div class="inspector-card native-dynamic-card">
-          <div class="inspector-card-title">原版动态资源</div>
-          ${asset.kind==='enemy'?'<p class="form-hint"><a href="/h14-coverage.html" target="_blank" rel="noopener">H14 全馆藏动作覆盖矩阵</a></p>':''}
+          <div class="inspector-card-title" data-i18n="studio.nativeDynTitle">${t('studio.nativeDynTitle')}</div>
+          ${asset.kind==='enemy'?`<p class="form-hint"><a href="/h14-coverage.html" target="_blank" rel="noopener" data-i18n="studio.h14Link">${t('studio.h14Link')}</a></p>`:''}
           ${asset.native_dynamics?.clips?.length ? `
-            <label for="native-motion-mode">动作模式</label>
+            <label for="native-motion-mode" data-i18n="studio.motionModeLabel">${t('studio.motionModeLabel')}</label>
             <select id="native-motion-mode" class="lib-import-input" style="width:100%;margin:6px 0">
-              <option value="free" ${this.selectedMotionMode==='free'?'selected':''}>自由预览（默认）</option>
-              <option value="strict" ${this.selectedMotionMode==='strict'?'selected':''}>严格验证</option>
+              <option value="free" ${this.selectedMotionMode==='free'?'selected':''} data-i18n="studio.modeFreeOpt">${t('studio.modeFreeOpt')}</option>
+              <option value="strict" ${this.selectedMotionMode==='strict'?'selected':''} data-i18n="studio.modeStrictOpt">${t('studio.modeStrictOpt')}</option>
             </select>
             <div id="h11-mode-state" class="h11-mode-state">${this._motionModeStateHtml()}</div>
-            <p class="form-hint">直接选择动作即可尝试。自由预览会在通过安全检查后自动处理部分旋转偏差；画面可能存在瑕疵，原游戏表现尚未验证。叠加动作需要基础动作组合。导出会保留实际处理方式。</p>
+            <p class="form-hint" data-i18n="studio.motionModeHint">${t('studio.motionModeHint')}</p>
             ${this._renderMotionBrowser(asset)}
             ${this._renderResourceResearch(asset)}
-            <p class="form-hint">使用下方播放／暂停与时间轴观察。保留骨骼轨原始位移，外部根运动未合成；日文标签有 BHV/debug 旁证，其余动作含义未知。不模拟游戏行为图、IK 或物理。</p>
-          ` : `<p class="form-hint">${escapeHtml(asset.native_dynamics?.discovery_error || (asset.native_dynamics ? '已扫描此模型的展开资源；当前没有物理动作 HKX。' : '尚未索引此模型的动作输入，请关联自己的 expanded 动画目录。'))}</p>`}
-          ${asset.native_dynamics?.tae_summary ? `<details class="resource-input-details"><summary>资源与 TAE 引用</summary><p class="form-hint">物理 HKX ${asset.native_dynamics.input_summary.physical_hkx??'?'} · 骨架 ${asset.native_dynamics.bone_count} 骨 · TAE ${asset.native_dynamics.tae_summary.entries} 条，其中导入引用 ${asset.native_dynamics.tae_summary.imports} 条。引用不作为新增物理动作统计。</p></details>` : ''}
+            <p class="form-hint" data-i18n="studio.playbackHint">${t('studio.playbackHint')}</p>
+          ` : `<p class="form-hint">${escapeHtml(asset.native_dynamics?.discovery_error || (asset.native_dynamics ? t('studio.noPhysicalHkx') : t('studio.noDynamicsIndexed')))}</p>`}
+          ${asset.native_dynamics?.tae_summary ? `<details class="resource-input-details"><summary data-i18n="studio.taeSummaryTitle">${t('studio.taeSummaryTitle')}</summary><p class="form-hint">${t('studio.taeSummary', { hkx: asset.native_dynamics.input_summary.physical_hkx??'?', bones: asset.native_dynamics.bone_count, entries: asset.native_dynamics.tae_summary.entries, imports: asset.native_dynamics.tae_summary.imports })}</p></details>` : ''}
           <details>
-            <summary>关联动作目录</summary>
-            <textarea id="native-motion-roots" class="lib-import-input" style="width:100%;min-height:58px" placeholder="每行一个含 Skeleton.hkx、动作 HKX 与 compendium 的目录">${escapeHtml((this.libraryData.dynamic_roots||[]).join('\n'))}</textarea>
-            <label class="form-hint"><input type="checkbox" id="native-roots-replace"> 用上面的目录列表替换已关联来源（用于移除失效路径）</label>
-            <button id="btn-scan-native-motion" class="btn-inspect-return" style="width:100%">关联并刷新动作列表</button>
+            <summary data-i18n="studio.motionRootsTitle">${t('studio.motionRootsTitle')}</summary>
+            <textarea id="native-motion-roots" class="lib-import-input" style="width:100%;min-height:58px" data-i18n-placeholder="studio.motionRootsPlaceholder" placeholder="${t('studio.motionRootsPlaceholder')}">${escapeHtml((this.libraryData.dynamic_roots||[]).join('\n'))}</textarea>
+            <label class="form-hint"><input type="checkbox" id="native-roots-replace"> <span data-i18n="studio.replaceRootsLabel">${t('studio.replaceRootsLabel')}</span></label>
+            <button id="btn-scan-native-motion" class="btn-inspect-return" style="width:100%" data-i18n="studio.scanMotionBtn">${t('studio.scanMotionBtn')}</button>
           </details>
         </div>
       ` : ''}
 
       ${asset.kind === 'weapon' ? `
         <div class="weapon-mount-box">
-          <div class="inspector-card-title">武器挂载配置</div>
-          <label style="font-size:11px">实验性基准
+          <div class="inspector-card-title" data-i18n="studio.mountConfigTitle">${t('studio.mountConfigTitle')}</div>
+          <label style="font-size:11px"><span data-i18n="studio.experimentalBasisLabel">${t('studio.experimentalBasisLabel')}</span>
             <select id="mount-candidate-anchor" class="lib-import-input" style="width:100%;margin:6px 0" ${this.selectedMountMode==='verified'?'disabled':''}>
-              ${(asset.experimental_anchors?.[this.selectedMountSlot] || ({right_hand:[3020,3022],left_hand:[3023,3025],right_back:[2014],left_back:[2013]})[this.selectedMountSlot]).map(ref=>`<option value="${ref}" ${this.selectedCandidateReference===ref?'selected':''}>${({3020:'右手握把',3022:'右手备用握把',3023:'左手握把',3025:'左前臂',2014:'右肩',2013:'左肩'})[ref]} · 候选 ${ref}</option>`).join('')}
+              ${(asset.experimental_anchors?.[this.selectedMountSlot] || ({right_hand:[3020,3022],left_hand:[3023,3025],right_back:[2014],left_back:[2013]})[this.selectedMountSlot]).map(ref=>`<option value="${ref}" ${this.selectedCandidateReference===ref?'selected':''}>${t(({3020:'studio.anchor3020',3022:'studio.anchor3022',3023:'studio.anchor3023',3025:'studio.anchor3025',2014:'studio.anchor2014',2013:'studio.anchor2013'})[ref])} · ${t('studio.anchorCandidate', { ref })}</option>`).join('')}
             </select>
           </label>
 
@@ -673,7 +679,7 @@ export class HangarStudio {
               return `
                 <button type="button" class="slot-opt-btn ${isActive ? 'active' : ''}" data-slot="${s.id}">
                   <span>${s.label}</span>
-                  <span class="slot-basis-tag">${isVerified ? '原版依据' : '候选挂点'}</span>
+                  <span class="slot-basis-tag">${isVerified ? t('studio.basisVerified') : t('studio.basisCandidate')}</span>
                 </button>
               `;
             }).join('')}
@@ -681,28 +687,28 @@ export class HangarStudio {
 
           <!-- 模式切换：验证模式 vs 实验性模式 -->
           <div class="mount-mode-picker">
-            <button type="button" class="btn-mode-opt ${this.selectedMountMode === 'verified' ? 'active' : ''}" data-mode="verified" ${!canSelectVerified ? 'disabled title="此槽位或手动微调无原版依据；请选择实验性装配。"' : 'title="基于原版真实参数与 Dummy 验证"'}>
-              ✓ 验证装配 (Verified)
+            <button type="button" class="btn-mode-opt ${this.selectedMountMode === 'verified' ? 'active' : ''}" data-mode="verified" ${!canSelectVerified ? `disabled title="${t('studio.modeVerifiedDisabledTitle')}"` : `title="${t('studio.modeVerifiedTitle')}"`}>
+              <span data-i18n="studio.modeVerifiedBtn">${t('studio.modeVerifiedBtn')}</span>
             </button>
-            <button type="button" class="btn-mode-opt ${this.selectedMountMode === 'experimental' ? 'active' : ''}" data-mode="experimental" title="支持自由装配与局部微调，候选 Dummy 挂点">
-              ⚙ 实验性装配 (Experimental)
+            <button type="button" class="btn-mode-opt ${this.selectedMountMode === 'experimental' ? 'active' : ''}" data-mode="experimental" title="${t('studio.modeExperimentalTitle')}">
+              <span data-i18n="studio.modeExperimentalBtn">${t('studio.modeExperimentalBtn')}</span>
             </button>
           </div>
 
           <!-- 候选挂点声明 -->
-          <div class="mount-disclaimer">
-            候选装配槽位参考机体标准手部/肩部 Dummy 挂点；实验性装配为候选预览，原版动态收折与外观可能未完全对齐。
+          <div class="mount-disclaimer" data-i18n="studio.mountDisclaimer">
+            ${t('studio.mountDisclaimer')}
           </div>
 
           <!-- 局部轴数值微调 (米/度) -->
           <div class="mount-adjustments-card">
             <div class="adj-card-header">
-              <span class="adj-card-title">局部轴微调 (Local-Axis Offset)</span>
-              <button type="button" id="btn-reset-adjustments" class="btn-adj-reset" title="重置偏移与旋转为 0">重置为 0</button>
+              <span class="adj-card-title" data-i18n="studio.adjTitle">${t('studio.adjTitle')}</span>
+              <button type="button" id="btn-reset-adjustments" class="btn-adj-reset" title="${t('studio.adjResetTitle')}" data-i18n="studio.adjResetBtn">${t('studio.adjResetBtn')}</button>
             </div>
             <div class="adj-grid">
               <div class="adj-group">
-                <span class="adj-group-label">位置 (米, ±100m)</span>
+                <span class="adj-group-label" data-i18n="studio.adjPositionLabel">${t('studio.adjPositionLabel')}</span>
                 <div class="adj-inputs-row">
                   <label class="adj-field"><span>X</span><input type="number" id="adj-pos-x" step="0.01" min="-100" max="100" value="${this.mountAdjustment.translation[0]}" /></label>
                   <label class="adj-field"><span>Y</span><input type="number" id="adj-pos-y" step="0.01" min="-100" max="100" value="${this.mountAdjustment.translation[1]}" /></label>
@@ -710,7 +716,7 @@ export class HangarStudio {
                 </div>
               </div>
               <div class="adj-group">
-                <span class="adj-group-label">旋转 (度, ±360°)</span>
+                <span class="adj-group-label" data-i18n="studio.adjRotationLabel">${t('studio.adjRotationLabel')}</span>
                 <div class="adj-inputs-row">
                   <label class="adj-field"><span>rX</span><input type="number" id="adj-rot-x" step="1" min="-360" max="360" value="${this.mountAdjustment.rotation[0]}" /></label>
                   <label class="adj-field"><span>rY</span><input type="number" id="adj-rot-y" step="1" min="-360" max="360" value="${this.mountAdjustment.rotation[1]}" /></label>
@@ -719,12 +725,12 @@ export class HangarStudio {
               </div>
             </div>
             <div class="adj-hint-text">
-              ${hasAdjustments ? '★ 检测到非零数值，已自动锁定为「实验性装配」' : '位置/角度默认为 0；修改任意数值将自动启用实验性装配。'}
+              ${hasAdjustments ? t('studio.adjNonzeroHint') : t('studio.adjDefaultHint')}
             </div>
           </div>
 
           <button type="button" id="btn-exec-mount" class="btn-exec-mount">
-            执行挂载至当前机体 (${this.selectedMountMode === 'verified' ? '验证装配' : '实验性装配'})
+            ${t('studio.execMountBtn', { mode: this.selectedMountMode === 'verified' ? t('studio.modeVerified') : t('studio.modeExperimental') })}
           </button>
         </div>
       ` : ''}
@@ -732,24 +738,24 @@ export class HangarStudio {
       <!-- 当前装配凭据展示 (若已有挂载) -->
       ${(mounted && this.lastMountResult) ? `
         <div class="inspector-card mount-proof-card">
-          <div class="inspector-card-title">当前机体武器装配凭据</div>
+          <div class="inspector-card-title" data-i18n="studio.mountProofTitle">${t('studio.mountProofTitle')}</div>
           <div class="proof-list">
             ${(this.lastMountResult?.mount?.mounts || [this.lastMountResult?.mount].filter(Boolean)).map(m => {
-              const slotLabel = m.slot === 'right_hand' ? '右手 (R-Arm)' : m.slot === 'left_hand' ? '左手 (L-Arm)' : m.slot === 'right_back' ? '右肩 (R-Back)' : '左肩 (L-Back)';
+              const slotLabel = m.slot === 'right_hand' ? t('studio.slotRightHand') : m.slot === 'left_hand' ? t('studio.slotLeftHand') : m.slot === 'right_back' ? t('studio.slotRightBack') : t('studio.slotLeftBack');
               const isExp = m.mode === 'experimental';
-              const t = m.adjustment?.translation || [0,0,0];
+              const tr = m.adjustment?.translation || [0,0,0];
               const r = m.adjustment?.rotation || [0,0,0];
-              const hasOff = t.some(v => v !== 0) || r.some(v => v !== 0);
+              const hasOff = tr.some(v => v !== 0) || r.some(v => v !== 0);
               return `
                 <div class="proof-item">
                   <div class="proof-item-header">
                     <span class="proof-slot-name">${slotLabel}</span>
-                    <span class="badge-mount-mode ${isExp ? 'experimental' : 'verified'}">${isExp ? '实验性' : '已验证'}</span>
+                    <span class="badge-mount-mode ${isExp ? 'experimental' : 'verified'}">${isExp ? t('studio.badgeExperimental') : t('studio.badgeVerified')}</span>
                   </div>
                   <div class="proof-detail-text">
-                    基准: ${m.anchor_basis === 'source_dummy_candidate' ? `候选 Dummy ${m.reference}` : `参数 Dummy ${m.reference}`}<br/>
-                    ${hasOff ? `微调: [${t.join(', ')}]m / [${r.join(', ')}]°<br/>` : ''}
-                    骨骼: 保留原机体 HKX 通道
+                    ${t('studio.proofBasis', { basis: m.anchor_basis === 'source_dummy_candidate' ? t('studio.basisCandidateDummy', { ref: m.reference }) : t('studio.basisParamDummy', { ref: m.reference }) })}<br/>
+                    ${hasOff ? `${t('studio.proofOffset', { t: tr.join(', '), r: r.join(', ') })}<br/>` : ''}
+                    ${t('studio.proofBonesKept')}
                   </div>
                 </div>
               `;
@@ -759,10 +765,10 @@ export class HangarStudio {
 
         <!-- 保存当前武器装配组合 -->
         <div class="inspector-card assembly-save-card">
-          <div class="inspector-card-title">保存武器装配组合</div>
+          <div class="inspector-card-title" data-i18n="studio.savePresetTitle">${t('studio.savePresetTitle')}</div>
           <div class="preset-save-row">
-            <input type="text" id="lib-preset-name-input" class="input-preset-name" placeholder="组合名称，如：重装双持" value="我的武器组合" />
-            <button type="button" id="btn-save-assembly-preset" class="btn-save-preset">保存组合</button>
+            <input type="text" id="lib-preset-name-input" class="input-preset-name" data-i18n-placeholder="studio.presetNamePlaceholder" placeholder="${t('studio.presetNamePlaceholder')}" value="${t('studio.presetDefaultName')}" />
+            <button type="button" id="btn-save-assembly-preset" class="btn-save-preset" data-i18n="studio.savePresetBtn">${t('studio.savePresetBtn')}</button>
           </div>
         </div>
       ` : ''}
@@ -770,9 +776,9 @@ export class HangarStudio {
       <!-- 已存武器组合配方列表 -->
       ${asset.kind==='weapon' ? `
       <div class="inspector-card assembly-presets-card">
-        <div class="inspector-card-title">已存武器组合配方 (${presets.length})</div>
+        <div class="inspector-card-title">${t('studio.presetsTitle', { count: presets.length })}</div>
         ${presets.length === 0 ? `
-          <div class="preset-empty">暂无保存的组合配方。完成武器挂载后可在此保存。</div>
+          <div class="preset-empty" data-i18n="studio.presetsEmpty">${t('studio.presetsEmpty')}</div>
         ` : `
           <div class="preset-list">
             ${presets.map(p => {
@@ -783,19 +789,19 @@ export class HangarStudio {
                 <div class="preset-item">
                   <div class="preset-item-header">
                     <span class="preset-item-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
-                    <span class="badge-mount-mode ${isExp ? 'experimental' : 'verified'}">${isExp ? '实验性' : '已验证'}</span>
+                    <span class="badge-mount-mode ${isExp ? 'experimental' : 'verified'}">${isExp ? t('studio.badgeExperimental') : t('studio.badgeVerified')}</span>
                   </div>
-                  <div class="preset-item-meta">包含 ${count} 件武器 · ${p.created_at ? p.created_at.slice(0, 10) : ''}</div>
+                  <div class="preset-item-meta">${t('studio.presetWeaponCount', { count })} · ${p.created_at ? p.created_at.slice(0, 10) : ''}</div>
                   <div class="preset-item-slots">
                     ${Object.entries(selections).map(([slot, sel]) => {
-                      const sName = slot === 'right_hand' ? '右手' : slot === 'left_hand' ? '左手' : slot === 'right_back' ? '右肩' : '左肩';
+                      const sName = slot === 'right_hand' ? t('studio.slotShortRightHand') : slot === 'left_hand' ? t('studio.slotShortLeftHand') : slot === 'right_back' ? t('studio.slotShortRightBack') : t('studio.slotShortLeftBack');
                       const wid = typeof sel === 'string' ? sel : sel.asset_id;
-                      const m = (typeof sel === 'object' && sel.mode === 'experimental') ? '实验' : '验证';
+                      const m = (typeof sel === 'object' && sel.mode === 'experimental') ? t('studio.modeShortExperimental') : t('studio.modeShortVerified');
                       const a=this.libraryData.assets.find(a=>a.id===wid);
-                      return `<span class="preset-slot-tag">${sName}: ${escapeHtml(a?.name||a?.resource_id||'资源已离线')} (${m})</span>`;
+                      return `<span class="preset-slot-tag">${sName}: ${escapeHtml(a?.name||a?.resource_id||t('studio.assetOffline'))} (${m})</span>`;
                     }).join('')}
                   </div>
-                  <button type="button" class="btn-load-preset" data-preset-id="${escapeHtml(p.id)}">载入此组合至机体</button>
+                  <button type="button" class="btn-load-preset" data-preset-id="${escapeHtml(p.id)}">${t('studio.loadPresetBtn')}</button>
                 </div>
               `;
             }).join('')}
@@ -806,37 +812,38 @@ export class HangarStudio {
 
       <!-- 技术诊断与校验溯源 (折叠显示) -->
       <details class="inspector-card inspector-diagnostics">
-        <summary class="inspector-card-title collapsible-title">技术诊断与格式溯源</summary>
+        <summary class="inspector-card-title collapsible-title" data-i18n="studio.diagFormatTitle">${t('studio.diagFormatTitle')}</summary>
         <div class="inspector-kv-grid" style="margin-top: 10px;">
-          <span class="inspector-key">本地源路径</span>
+          <span class="inspector-key" data-i18n="studio.diagSourcePath">${t('studio.diagSourcePath')}</span>
           <span class="inspector-val" title="${escapeHtml(asset.source)}">${escapeHtml(this._shortenPath(asset.source))}</span>
-          <span class="inspector-key">原始体积</span>
+          <span class="inspector-key" data-i18n="studio.diagRawSize">${t('studio.diagRawSize')}</span>
           <span class="inspector-val">${this._formatBytes(asset.bytes)}</span>
-          <span class="inspector-key">校验哈希</span>
+          <span class="inspector-key" data-i18n="studio.diagHashKey">${t('studio.diagHashKey')}</span>
           <span class="inspector-val" title="${escapeHtml(asset.sha256)}">${escapeHtml(asset.sha256 ? asset.sha256.slice(0, 16) + '…' : '-')}</span>
-          <span class="inspector-key">校验状态</span>
+          <span class="inspector-key" data-i18n="studio.diagVerifyStatus">${t('studio.diagVerifyStatus')}</span>
           <span class="inspector-val" style="color: ${asset.verification === 'glb_validated' ? 'var(--c-success)' : 'var(--c-ice)'};">
-            ${asset.verification === 'glb_validated' ? 'GLB 格式标准验证通过' : '源已发现待转换'}
+            ${asset.verification === 'glb_validated' ? t('studio.verifyGlbPass') : t('studio.statusPendingConversion')}
           </span>
         </div>
       </details>
 
       <!-- 展示说明 -->
       <div class="inspector-card">
-        <div class="inspector-card-title">展示状态</div>
+        <div class="inspector-card-title" data-i18n="studio.displayStatusTitle">${t('studio.displayStatusTitle')}</div>
         <div class="inspector-kv-grid">
-          <span class="inspector-key">网格变换</span>
-          <span class="inspector-val">源模型空间 / 原始刚性绑定</span>
-          <span class="inspector-key">材质来源</span>
-          <span class="inspector-val" style="color: var(--c-copper);">${asset.material_summary?.reconstructed ? `${asset.material_summary.reconstructed} 个网格材质关联原版纹理 · 着色器含近似` : '预览后查看摄影室来源与近似说明'}</span>
-          <span class="inspector-key">动态外观</span>
-          <span class="inspector-val" style="color: var(--c-porcelain-muted);">not_verified · 与原游戏外观未对照</span>
-          <span class="inspector-key">骨骼动作</span>
-          <span class="inspector-val" id="inspector-motion-identity" style="color: var(--c-porcelain-muted);">${mounted ? '机体 HKX 保留 · 武器自身动作未还原' : isCurrentPreview && this.previewedNativeClipId ? this._motionIdentityText() : '静态姿态 · 无 HKX 通道'}</span>
+          <span class="inspector-key" data-i18n="studio.meshTransformKey">${t('studio.meshTransformKey')}</span>
+          <span class="inspector-val" data-i18n="studio.meshTransformVal">${t('studio.meshTransformVal')}</span>
+          <span class="inspector-key" data-i18n="studio.materialSourceKey">${t('studio.materialSourceKey')}</span>
+          <span class="inspector-val" style="color: var(--c-copper);">${asset.material_summary?.reconstructed ? t('studio.materialReconstructed', { count: asset.material_summary.reconstructed }) : t('studio.materialPreviewHint')}</span>
+          <span class="inspector-key" data-i18n="studio.dynamicAppearanceKey">${t('studio.dynamicAppearanceKey')}</span>
+          <span class="inspector-val" style="color: var(--c-porcelain-muted);" data-i18n="studio.dynamicAppearanceVal">${t('studio.dynamicAppearanceVal')}</span>
+          <span class="inspector-key" data-i18n="studio.motionIdentityKey">${t('studio.motionIdentityKey')}</span>
+          <span class="inspector-val" id="inspector-motion-identity" style="color: var(--c-porcelain-muted);">${mounted ? t('studio.motionMechKept') : isCurrentPreview && this.previewedNativeClipId ? this._motionIdentityText() : t('studio.motionStaticPose')}</span>
         </div>
       </div>
     `;
 
+    applyDOM(panel);
     arrangeLibrary(panel,asset,this.previewedAsset?.id===asset.id?this.previewedMaterials:null,this.lastAssetFailure?.id===asset.id?this.lastAssetFailure.message:null);
     this.identityEditor.render(panel, asset);
     this._bindInspectorActions();
@@ -857,49 +864,49 @@ export class HangarStudio {
   }
 
   _modeLabel(mode) {
-    return mode === 'strict' ? '严格' : '自由';
+    return mode === 'strict' ? t('studio.modeStrictShort') : t('studio.modeFreeShort');
   }
 
   _motionModeStateHtml() {
     const req = this._modeLabel(this.selectedMotionMode);
     if (!this.previewedMotionMode) {
-      return `尚未载入动作；下一次载入将使用 <b>${req}</b> 模式。`;
+      return t('studio.modeStateNotLoaded', { mode: req });
     }
     const disp = this._modeLabel(this.previewedMotionMode);
     if (this.previewedMotionMode === this.selectedMotionMode) {
-      const strategy = this.previewedMotionProcessing?.strategy === 'certified_spline_projection' ? ' · 近似预览（安全旋转处理）' : '';
-      return `请求模式与当前视窗显示一致: <b>${disp}</b>${strategy}。`;
+      const strategy = this.previewedMotionProcessing?.strategy === 'certified_spline_projection' ? t('studio.strategyApproxSuffix') : '';
+      return t('studio.modeStateMatch', { mode: disp, strategy });
     }
-    return `<span class="h11-mode-warn">请求: ${req} · 当前视窗显示: ${disp}（来自上次成功载入；载入失败不会自动切换模式）</span>`;
+    return `<span class="h11-mode-warn">${t('studio.modeStateMismatch', { req, disp })}</span>`;
   }
 
   _motionIdentityText() {
     const p = this.previewedMotionProcessing;
     const mode = this._modeLabel(this.previewedMotionMode || p?.mode || 'free');
-    const strategy = p?.strategy === 'certified_spline_projection' ? '近似预览（安全旋转处理）'
-      : p?.strategy === 'original_unit_rotation' ? '原版单位旋转'
-      : '原版 HKX 轨道';
-    return `原版 HKX · ${mode}模式 · ${strategy} · 原游戏运行时未验证`;
+    const strategy = p?.strategy === 'certified_spline_projection' ? t('studio.strategyApproxShort')
+      : p?.strategy === 'original_unit_rotation' ? t('studio.strategyOriginalRotation')
+      : t('studio.strategyNativeHkx');
+    return t('studio.motionIdentity', { mode, strategy });
   }
 
   _h11StatusMeta(status) {
     const map = {
-      untested: { label: '未测试 · 可直接尝试', cls: 'st-untested' },
-      playable: { label: '可播放', cls: 'st-playable' },
-      approximate: { label: '近似预览', cls: 'st-approximate' },
-      needs_composition: { label: '需合成', cls: 'st-needs-composition' },
-      unparseable: { label: '无法解析', cls: 'st-unparseable' }
+      untested: { label: t('studio.statusUntested'), cls: 'st-untested' },
+      playable: { label: t('studio.statusPlayable'), cls: 'st-playable' },
+      approximate: { label: t('studio.statusApproximate'), cls: 'st-approximate' },
+      needs_composition: { label: t('studio.statusNeedsComposition'), cls: 'st-needs-composition' },
+      unparseable: { label: t('studio.statusUnparseable'), cls: 'st-unparseable' }
     };
     return map[status] || map.untested;
   }
 
   _h11FallbackReason(status) {
     const map = {
-      untested: '尚未尝试，可以直接载入；未经视觉验收不会阻止预览。',
-      playable: '此前已成功载入。',
-      approximate: '此前经逐帧安全旋转证明后投影载入；与原游戏消费存在差异。',
-      needs_composition: '叠加动画需要基础动作与原版混合关系，尚不作为普通独立动作播放。',
-      unparseable: '此动作存在实际解析或转换障碍；可展开诊断查看。'
+      untested: t('studio.reasonUntested'),
+      playable: t('studio.reasonPlayable'),
+      approximate: t('studio.reasonApproximate'),
+      needs_composition: t('studio.reasonNeedsComposition'),
+      unparseable: t('studio.reasonUnparseable')
     };
     return map[status] || map.untested;
   }
@@ -928,21 +935,21 @@ export class HangarStudio {
     return `
       <div class="h11-motion-browser">
         <div class="h11-motion-filters">
-          <input type="text" id="h11-motion-search" class="lib-import-input" style="width:100%" spellcheck="false" placeholder="搜索动作 ID / 名称 / 来源标签..." value="${escapeHtml(this.motionFilter.query)}">
+          <input type="text" id="h11-motion-search" class="lib-import-input" style="width:100%" spellcheck="false" data-i18n-placeholder="studio.motionSearchPlaceholder" placeholder="${t('studio.motionSearchPlaceholder')}" value="${escapeHtml(this.motionFilter.query)}">
           <div class="h11-motion-filter-row">
             <select id="h11-motion-filter-type" class="lib-import-input">
-              <option value="all">全部类型</option>
-              <option value="normal" ${this.motionFilter.type==='normal'?'selected':''}>Normal 常规</option>
-              <option value="additive" ${this.motionFilter.type==='additive'?'selected':''}>Additive 叠加</option>
-              <option value="other" ${this.motionFilter.type==='other'?'selected':''}>其他 / 未知</option>
+              <option value="all" data-i18n="studio.filterTypeAll">${t('studio.filterTypeAll')}</option>
+              <option value="normal" ${this.motionFilter.type==='normal'?'selected':''} data-i18n="studio.kindNormal">${t('studio.kindNormal')}</option>
+              <option value="additive" ${this.motionFilter.type==='additive'?'selected':''} data-i18n="studio.kindAdditive">${t('studio.kindAdditive')}</option>
+              <option value="other" ${this.motionFilter.type==='other'?'selected':''} data-i18n="studio.kindOther">${t('studio.kindOther')}</option>
             </select>
             <select id="h11-motion-filter-status" class="lib-import-input">
-              <option value="all">全部状态</option>
+              <option value="all" data-i18n="studio.filterStatusAll">${t('studio.filterStatusAll')}</option>
               ${['untested','playable','approximate','needs_composition','unparseable'].map(s=>`<option value="${s}" ${this.motionFilter.status===s?'selected':''}>${this._h11StatusMeta(s).label}</option>`).join('')}
             </select>
           </div>
-          <select id="h12-motion-sort" class="lib-import-input" aria-label="动作排序">
-            ${[['name','按动作 ID'],['duration','按时长'],['status','按当前模式状态']].map(([v,t])=>`<option value="${v}" ${this.motionSort===v?'selected':''}>${t}</option>`).join('')}
+          <select id="h12-motion-sort" class="lib-import-input" data-i18n-aria="studio.motionSortAria">
+            ${[['name','studio.sortById'],['duration','studio.sortByDuration'],['status','studio.sortByStatus']].map(([v,key])=>`<option value="${v}" ${this.motionSort===v?'selected':''} data-i18n="${key}">${t(key)}</option>`).join('')}
           </select>
           <div id="h11-motion-count" class="h11-motion-count"></div>
         </div>
@@ -970,10 +977,10 @@ export class HangarStudio {
   _renderResourceResearch(asset) {
     const data=asset.resource_research;
     if (!data) return '';
-    return `<details class="resource-research"><summary>资源研究信息 · ${escapeHtml(data.title)}</summary>
+    return `<details class="resource-research"><summary>${t('studio.researchSummary', { title: escapeHtml(data.title) })}</summary>
       ${(data.notes||[]).map(note=>`<p class="form-hint">${escapeHtml(note)}</p>`).join('')}
       ${(asset.native_dynamics?.clips||[]).filter(c=>c.research_note).map(c=>`<button class="btn-inspect-return resource-research-clip" data-clip="${escapeHtml(c.id)}" style="width:100%;margin-top:5px">${escapeHtml(c.research_note)}</button>`).join('')}
-      <p class="form-hint">${escapeHtml(data.boundary)}</p><p class="form-hint">资料：${(data.sources||[]).map(escapeHtml).join(' · ')}</p></details>`;
+      <p class="form-hint">${escapeHtml(data.boundary)}</p><p class="form-hint">${t('studio.researchSources', { sources: (data.sources||[]).map(escapeHtml).join(' · ') })}</p></details>`;
   }
 
   renderMotionList() {
@@ -988,11 +995,12 @@ export class HangarStudio {
     const modeLabel = this._modeLabel(this.selectedMotionMode);
 
     const countEl = document.getElementById('h11-motion-count');
-    if (countEl) countEl.textContent = `匹配 ${filtered.length} / 共 ${clips.length} 段 · 每页 24 条 · ${modeLabel}`;
+    if (countEl) countEl.textContent = t('studio.motionCount', { matched: filtered.length, total: clips.length, mode: modeLabel });
     const nav=document.getElementById('h13-motion-pages');
-    nav.innerHTML=`<button id="h13-page-prev" ${paging.page===1?'disabled':''}>上一页</button>
-      <span>第 ${paging.page} / ${paging.pages} 页</span><button id="h13-page-next" ${paging.page===paging.pages?'disabled':''}>下一页</button>
-      <label>跳至 <input id="h13-page-number" type="number" min="1" max="${paging.pages}" value="${paging.page}" aria-label="跳转动作页"></label><button id="h13-page-go">跳转</button>`;
+    nav.innerHTML=`<button id="h13-page-prev" ${paging.page===1?'disabled':''} data-i18n="studio.pagePrev">${t('studio.pagePrev')}</button>
+      <span>${t('studio.pageXofY', { page: paging.page, pages: paging.pages })}</span><button id="h13-page-next" ${paging.page===paging.pages?'disabled':''} data-i18n="studio.pageNext">${t('studio.pageNext')}</button>
+      <label><span data-i18n="studio.jumpTo">${t('studio.jumpTo')}</span> <input id="h13-page-number" type="number" min="1" max="${paging.pages}" value="${paging.page}" data-i18n-aria="studio.pageJumpAria"></label><button id="h13-page-go" data-i18n="studio.pageGo">${t('studio.pageGo')}</button>`;
+    applyDOM(nav);
     const go=page=>{this.motionPage=page;this.renderMotionList();document.getElementById('h11-motion-list').scrollTop=0;};
     nav.querySelector('#h13-page-prev').onclick=()=>go(paging.page-1);
     nav.querySelector('#h13-page-next').onclick=()=>go(paging.page+1);
@@ -1000,7 +1008,7 @@ export class HangarStudio {
     nav.querySelector('input').onkeydown=e=>{if(e.key==='Enter')go(e.target.value);};
 
     if (filtered.length === 0) {
-      wrap.innerHTML = '<div class="h11-motion-empty">没有符合当前过滤条件的动作；调整搜索或状态过滤即可。</div>';
+      wrap.innerHTML = `<div class="h11-motion-empty">${t('studio.motionNoMatch')}</div>`;
       return;
     }
 
@@ -1012,26 +1020,27 @@ export class HangarStudio {
       const freeMeta = this._h11StatusMeta(free.status);
       const strictMeta = this._h11StatusMeta(strict.status);
       const labels = (c.state_labels || []).join(' / ');
+      const kindKey = ({ normal: 'studio.kindNormal', additive: 'studio.kindAdditive', other: 'studio.kindOther' })[this._clipKind(c)];
       const raw = { catalog_id: c.id, animation_type: c.animation_type, blend_hint: c.blend_hint, binding_status: c.binding_status, discovery_error: c.discovery_error, semantic_identity: c.semantic_identity, relationship: c.relationship, tae_references:c.tae_references };
       const rawKeys = Object.entries(raw).filter(([, v]) => v != null && v !== '');
       return `
-        <div class="h11-motion-item ${isActive ? 'active' : ''}" role="button" tabindex="0" data-clip="${escapeHtml(c.id)}" title="点击载入此动作（${modeLabel}模式）">
+        <div class="h11-motion-item ${isActive ? 'active' : ''}" role="button" tabindex="0" data-clip="${escapeHtml(c.id)}" title="${t('studio.motionItemClickTitle', { mode: modeLabel })}">
           <div class="h11-motion-item-head">
-            <span class="h11-motion-id">${escapeHtml(c.name || '（未命名动作）')}${isActive?' · 当前播放':''}</span>
+            <span class="h11-motion-id">${escapeHtml(c.name || t('studio.motionUnnamed'))}${isActive?t('studio.motionNowPlaying'):''}</span>
           </div>
-          ${labels ? `<div class="h11-motion-labels">来源标签: ${escapeHtml(labels)}</div>` : '<div class="h11-motion-labels">原版用途未知 · 可以尝试</div>'}
+          ${labels ? `<div class="h11-motion-labels">${t('studio.motionSourceLabels', { labels: escapeHtml(labels) })}</div>` : `<div class="h11-motion-labels">${t('studio.motionPurposeUnknown')}</div>`}
           <div class="h11-motion-item-meta">
-            <span class="h11-chip ${this._clipKind(c)}">${({normal:'Normal 常规',additive:'Additive 叠加',other:'其他 / 未知'})[this._clipKind(c)]}</span>
-            <span class="h11-chip">${c.frames ?? '?'} 帧 · ${(Number(c.duration) || 0).toFixed(2)}s</span>
+            <span class="h11-chip ${this._clipKind(c)}">${t(kindKey)}</span>
+            <span class="h11-chip">${t('studio.motionFrames', { frames: c.frames ?? '?' })} · ${(Number(c.duration) || 0).toFixed(2)}s</span>
           </div>
           <div class="h11-motion-item-status">
-            <span class="h11-status ${freeMeta.cls}" title="${escapeHtml(free.reason)}">自由: ${freeMeta.label}</span>
-            <span class="h11-status ${strictMeta.cls}" title="${escapeHtml(strict.reason)}">严格: ${strictMeta.label}</span>
+            <span class="h11-status ${freeMeta.cls}" title="${escapeHtml(free.reason)}">${t('studio.statusFreePrefix', { status: freeMeta.label })}</span>
+            <span class="h11-status ${strictMeta.cls}" title="${escapeHtml(strict.reason)}">${t('studio.statusStrictPrefix', { status: strictMeta.label })}</span>
           </div>
           <details class="h11-motion-diag" onclick="event.stopPropagation()">
-            <summary>原因与诊断（展开不影响选择）</summary>
+            <summary data-i18n="studio.motionDiagSummary">${t('studio.motionDiagSummary')}</summary>
             <p class="h11-motion-reason">${escapeHtml(this._playability(c, this.selectedMotionMode).reason)}</p>
-            ${c.research_note ? `<p class="h11-motion-reason note">研究备注（哈希锁定的研究记录 · 非玩法认证）: ${escapeHtml(c.research_note)}</p>` : ''}
+            ${c.research_note ? `<p class="h11-motion-reason note">${t('studio.researchNotePrefix', { note: escapeHtml(c.research_note) })}</p>` : ''}
             ${rawKeys.length ? `<pre class="h11-motion-raw">${escapeHtml(JSON.stringify(Object.fromEntries(rawKeys), null, 1))}</pre>` : ''}
           </details>
         </div>
@@ -1086,18 +1095,18 @@ export class HangarStudio {
       if(this.isOperating) return;
       const roots=(document.getElementById('native-motion-roots')?.value||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
       this.isOperating=true;
-      this.app._showJobOverlay(true,'正在关联原版动作目录…',10);
+      this.app._showJobOverlay(true,t('studio.linkingMotionRoots'),10);
       try {
         const response=await fetch('/api/library/scan_dynamics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({roots,replace_roots:!!document.getElementById('native-roots-replace')?.checked})});
         const data=await response.json();
-        if(!response.ok) throw new Error(data.error?.message||'动作索引失败');
+        if(!response.ok) throw new Error(data.error?.message||t('studio.motionIndexFailed'));
         this.activeJobId=data.job_id;
-        const job=await api.pollJob(data.job_id,j=>this.app._showJobOverlay(true,j.message||'读取动作目录…',jobPercent(j)));
+        const job=await api.pollJob(data.job_id,j=>this.app._showJobOverlay(true,j.message||t('studio.readingMotionCatalog'),jobPercent(j)));
         const selected=this.selectedAsset?.id;
         await this.refreshLibrary();
         this.selectedAsset=this.libraryData.assets.find(a=>a.id===selected)||this.selectedAsset;
         this.renderInspector();
-        this.app._showToast(`已关联 ${job.result.clips} 段原版动作；完整兼容性在载入时检查。`,'success');
+        this.app._showToast(t('studio.motionRootsLinked',{count:job.result.clips}),'success');
       } catch(error) {this.app._showToast(error.message,'error');}
       finally {this.isOperating=false;this.activeJobId=null;this.app._showJobOverlay(false);}
     });
@@ -1105,7 +1114,7 @@ export class HangarStudio {
       const asset = this.selectedAsset;
       const part = this.app.catalog.parts.find(p => p.resource_stem?.toUpperCase() === asset.resource_id);
       if (!part || !part.buildable) {
-        this.app._showToast('此原件缺少匹配的动画装配骨架；可独立预览与导出。其他部件骨架不能直接替用。', 'info');
+        this.app._showToast(t('studio.equipNoSkeleton'), 'info');
         this.previewAsset(asset);
         return;
       }
@@ -1171,7 +1180,7 @@ export class HangarStudio {
         }
         const mountBtn = document.getElementById('btn-exec-mount');
         if (mountBtn) {
-          mountBtn.textContent = `执行挂载至当前机体 (${this.selectedMountMode === 'verified' ? '验证装配' : '实验性装配'})`;
+          mountBtn.textContent = t('studio.execMountBtn', { mode: this.selectedMountMode === 'verified' ? t('studio.modeVerified') : t('studio.modeExperimental') });
         }
       });
     };
@@ -1227,8 +1236,8 @@ export class HangarStudio {
     this.isOperating = true;
 
     const requestModeLabel = this._modeLabel(this.selectedMotionMode);
-    this.app._showJobOverlay(true, `正在为 [${asset.name}] 生成独立 GLB...`, 15);
-    this.app._showToast(`正在转换独立模型 ${asset.resource_id}...`, 'info');
+    this.app._showJobOverlay(true, t('studio.previewGenerating', { name: asset.name }), 15);
+    this.app._showToast(t('studio.previewConverting', { id: asset.resource_id }), 'info');
 
     try {
       const res = await fetch(`${window.location.origin}/api/library/${nativeClipId ? 'animate' : 'preview'}`, {
@@ -1250,13 +1259,13 @@ export class HangarStudio {
       // 轮询作业进度
       const completedJob = await api.pollJob(jobId, job => {
         const pct = jobPercent(job);
-        this.app._showJobOverlay(true, `[${job.stage || '转换中'}] ${job.message || '解算顶点与矩阵...'}`, Math.max(20, pct));
+        this.app._showJobOverlay(true, t('studio.jobStageMessage', { stage: job.stage || t('studio.stageConverting'), message: job.message || t('studio.jobSolving') }), Math.max(20, pct));
       });
 
       const modelUrl = completedJob.result?.model_url;
-      if (!modelUrl) throw new Error('转换完成但未返回有效 model_url');
+      if (!modelUrl) throw new Error(t('studio.noModelUrlReturned'));
 
-      this.app._showJobOverlay(true, 'GLB 校验成功，正在载入 3D 机库视窗...', 90);
+      this.app._showJobOverlay(true, t('studio.glbLoadingViewport'), 90);
 
       // 加载进入 3D 视窗：使用 viewer.loadModel 并传递当前资产类型
       const loaded = await this.app.viewer.loadModel(modelUrl, {
@@ -1292,8 +1301,8 @@ export class HangarStudio {
       const statusEl = document.getElementById('model-support-status');
       if (statusEl) {
         statusEl.textContent = nativeClipId
-          ? `[${this._modeLabel(this.previewedMotionMode)}模式 · ${this.previewedMotionProcessing?.strategy==='certified_spline_projection'?'近似预览（安全旋转处理）':'原版单位旋转'} · 原游戏运行时未验证] ${asset.name} · 同角色骨架轨道 · 外部根运动／运行时行为及动态外观未验证`
-          : `[静态源模型] ${asset.name} (${asset.resource_id}) · 刚性骨骼 · 材质来源见摄影室 · 动态外观未验证`;
+          ? t('studio.statusMotionLoaded', { mode: this._modeLabel(this.previewedMotionMode), strategy: this.previewedMotionProcessing?.strategy==='certified_spline_projection' ? t('studio.strategyApproxShort') : t('studio.strategyOriginalRotation'), name: asset.name })
+          : t('studio.statusStaticModel', { name: asset.name, id: asset.resource_id });
         statusEl.title = (completedJob.result?.warnings || []).join('\n');
       }
 
@@ -1302,7 +1311,7 @@ export class HangarStudio {
 
       this.app._showJobOverlay(false);
       this.app._hideModelErrorAlert();
-      this.app._showToast(`已成功载入独立馆藏模型: ${asset.name}`, 'success');
+      this.app._showToast(t('studio.standaloneLoaded', { name: asset.name }), 'success');
 
       // 更新列表与检视器操作态
       this.renderAssetList();
@@ -1311,23 +1320,23 @@ export class HangarStudio {
       this.app._showJobOverlay(false);
       this.lastAssetFailure={id:asset.id,message:err.message};
       if (err.code === 'cancelled') {
-        this.app._showToast('预览已取消，当前场景保留上一台有效机体。', 'info');
+        this.app._showToast(t('studio.previewCancelled'), 'info');
       } else {
-        const currentClip = this.app.animator?.currentClipName || '静态姿态';
-        const modeNote = `请求模式: ${requestModeLabel}；当前视窗显示: ${this.previewedMotionMode ? this._modeLabel(this.previewedMotionMode) + ' 模式' : '静态姿态（无动作）'}。本次失败已保留当前模型、动作、导出目标与显示模式，未自动切换模式。`;
+        const currentClip = this.app.animator?.currentClipName || t('studio.clipStaticPose');
+        const modeNote = t('studio.failureModeNote', { req: requestModeLabel, disp: this.previewedMotionMode ? t('studio.modeWithSuffix', { mode: this._modeLabel(this.previewedMotionMode) }) : t('studio.staticNoMotion') });
         const detailsPayload = err.details
           ? { motion_mode: modeNote, backend: err.details }
           : modeNote;
         this.app._showModelErrorAlert(err.message, detailsPayload, {
-          title: nativeClipId ? `动作未加载 (${requestModeLabel}模式请求) · 当前：${currentClip}` : '预览未完成 · 已保留当前模型'
+          title: nativeClipId ? t('studio.motionLoadFailedTitle', { mode: requestModeLabel, clip: currentClip }) : t('studio.previewIncompleteTitle')
         });
         if (nativeClipId) {
           // 明确区分请求模式与显示模式；不自动翻转 selectedMotionMode
           const stateEl=document.getElementById('h11-mode-state');
           if(stateEl) stateEl.innerHTML=this._motionModeStateHtml();
-          this.app._showToast(`动作载入失败 (${requestModeLabel}模式): ${err.message} · 当前模型/动作/导出目标与显示模式已保留`, 'error');
+          this.app._showToast(t('studio.motionLoadFailedToast', { mode: requestModeLabel, msg: err.message }), 'error');
         } else {
-          this.app._showToast(`模型载入失败: ${err.message} (已保留当前场景)`, 'error');
+          this.app._showToast(t('studio.modelLoadFailedToast', { msg: err.message }), 'error');
         }
       }
     } finally {
@@ -1363,13 +1372,13 @@ export class HangarStudio {
    */
   async returnToAssembledMech() {
     if (!this.app.lastSuccessfulModelUrl) {
-      this.app._showToast('当前尚未烘焙四槽机体，正在为你启动默认装配...', 'info');
+      this.app._showToast(t('studio.noBakedMech'), 'info');
       this.switchMode('workbench');
       await this.app.buildAssembly(this.app.catalog?.currentLoadout);
       return;
     }
 
-    this.app._showJobOverlay(true, '正在恢复整备机甲场景...', 40);
+    this.app._showJobOverlay(true, t('studio.restoringMech'), 40);
     try {
       const loaded = await this.app.viewer.loadModel(this.app.lastSuccessfulModelUrl, {
         previewKind: 'assembly'
@@ -1394,17 +1403,17 @@ export class HangarStudio {
       const statusEl = document.getElementById('model-support-status');
       if (statusEl) {
         const baked = loaded.animations?.length || 0;
-        statusEl.textContent = `${baked} 段原版动作 (HKX) · 材质来源见摄影室 · 动态外观未验证`;
+        statusEl.textContent = t('studio.statusMechRestored', { count: baked });
       }
 
       this.app._showJobOverlay(false);
-      this.app._showToast('已恢复整备机体与骨骼动画！', 'success');
+      this.app._showToast(t('studio.mechRestoredToast'), 'success');
 
       this.renderAssetList();
       this.renderInspector();
     } catch (err) {
       this.app._showJobOverlay(false);
-      this.app._showToast(`恢复机体失败: ${err.message}`, 'error');
+      this.app._showToast(t('studio.mechRestoreFailed', { msg: err.message }), 'error');
     }
   }
 
@@ -1430,8 +1439,8 @@ export class HangarStudio {
             const isExp = (mountResult?.mount_verification === 'experimental_not_verified') ||
               (this.lastMountResult?.mount_verification === 'experimental_not_verified');
             const badgeHtml = isExp
-              ? `<span class="viewport-banner-badge experimental" title="候选 Dummy 挂点 / 局部轴微调">EXPERIMENTAL 实验性挂载</span>`
-              : `<span class="viewport-banner-badge verified" title="原版参数与 Dummy 验证">VERIFIED 验证挂载</span>`;
+              ? `<span class="viewport-banner-badge experimental" title="${t('studio.bannerExpTitle')}">${t('studio.bannerExpBadge')}</span>`
+              : `<span class="viewport-banner-badge verified" title="${t('studio.bannerVerifiedTitle')}">${t('studio.bannerVerifiedBadge')}</span>`;
             nameEl.innerHTML = `${escapeHtml(asset.name || asset.resource_id)} ${badgeHtml}`;
           } else {
             nameEl.textContent = `${asset.name || asset.resource_id} (${asset.resource_id})`;
@@ -1466,7 +1475,7 @@ export class HangarStudio {
    */
   openExportModal() {
     if (!this.previewedJobId || !this.selectedAsset) {
-      this.app._showToast('请先成功预览要导出的模型', 'info');
+      this.app._showToast(t('studio.exportNeedPreviewToast'), 'info');
       return;
     }
 
@@ -1501,19 +1510,19 @@ export class HangarStudio {
       proofNotice.innerHTML = `
         <div class="export-notice-header">
           <span class="badge-mount-mode ${isExp ? 'experimental' : 'verified'}">
-            ${isExp ? 'EXPERIMENTAL 实验性装配' : 'VERIFIED 技术验证装配'}
+            ${isExp ? t('studio.exportBadgeExperimental') : t('studio.exportBadgeVerified')}
           </span>
-          <span class="export-notice-title">导出模型包含 ${mounts.length} 个武器挂载点凭据</span>
+          <span class="export-notice-title">${t('studio.exportProofHeader', { count: mounts.length })}</span>
         </div>
         <div class="export-proof-list">
           ${mounts.map(m => {
-            const slotName = m.slot === 'right_hand' ? '右手' : m.slot === 'left_hand' ? '左手' : m.slot === 'right_back' ? '右肩' : '左肩';
+            const slotName = m.slot === 'right_hand' ? t('studio.slotShortRightHand') : m.slot === 'left_hand' ? t('studio.slotShortLeftHand') : m.slot === 'right_back' ? t('studio.slotShortRightBack') : t('studio.slotShortLeftBack');
             const adj = m.adjustment?.translation || [0, 0, 0];
             const hasAdj = adj.some(v => v !== 0);
-            return `<div class="export-proof-item">${slotName}: ${escapeHtml(m.weapon ? m.weapon.split(/[\\/]/).pop() : '武器')} · ${m.mode === 'experimental' ? '候选Dummy' : '参数Dummy'}${hasAdj ? ' (含微调)' : ''}</div>`;
+            return `<div class="export-proof-item">${slotName}: ${escapeHtml(m.weapon ? m.weapon.split(/[\\/]/).pop() : t('studio.weaponFallback'))} · ${m.mode === 'experimental' ? t('studio.basisCandidateDummyShort') : t('studio.basisParamDummyShort')}${hasAdj ? t('studio.withOffsetSuffix') : ''}</div>`;
           }).join('')}
         </div>
-        <div class="export-notice-sub">挂载元数据将永久记录于 GLB 的 extras.H06_weapon_mounts 节点中。</div>
+        <div class="export-notice-sub">${t('studio.exportMetaNote')}</div>
       `;
     } else {
       proofNotice.style.display = 'none';
@@ -1545,7 +1554,7 @@ export class HangarStudio {
           if (dirInput) dirInput.value = dialogRes.path;
         }
       } catch (err) {
-        this.app._showToast(`选择导出目录失败: ${err.message}`, 'error');
+        this.app._showToast(t('studio.exportDirFailed', { msg: err.message }), 'error');
       }
     });
 
@@ -1568,7 +1577,7 @@ export class HangarStudio {
     if (this.isOperating) return;
     this.isOperating = true;
 
-    this.app._showJobOverlay(true, '提交独立 GLB 导出作业...', 20);
+    this.app._showJobOverlay(true, t('studio.exportSubmitting'), 20);
 
     try {
       const res = await fetch(`${window.location.origin}/api/library/export`, {
@@ -1586,20 +1595,20 @@ export class HangarStudio {
 
       const completed = await api.pollJob(exportJobId, job => {
         const pct = jobPercent(job);
-        this.app._showJobOverlay(true, `[导出中] ${job.message || '正在封装模型...'}`, Math.max(30, pct));
+        this.app._showJobOverlay(true, t('studio.jobStageMessage', { stage: t('studio.stageExporting'), message: job.message || t('studio.jobPackaging') }), Math.max(30, pct));
       });
 
       const fileResult = completed.result?.file;
-      if (!fileResult) throw new Error('服务未返回实际导出路径');
+      if (!fileResult) throw new Error(t('studio.exportNoPath'));
       this.lastExportResult = completed.result;
       this.app._showJobOverlay(false);
-      this.app._showToast(`独立 GLB 导出成功: ${fileResult}`, 'success');
+      this.app._showToast(t('studio.exportDone', { path: fileResult }), 'success');
     } catch (err) {
       this.app._showJobOverlay(false);
       if (err.code === 'cancelled') {
-        this.app._showToast('导出作业已取消。', 'info');
+        this.app._showToast(t('studio.exportCancelled'), 'info');
       } else {
-        this.app._showToast(`导出失败: ${err.message}`, 'error');
+        this.app._showToast(t('studio.exportFailed', { msg: err.message }), 'error');
       }
     } finally {
       this.isOperating = false;
@@ -1618,7 +1627,7 @@ export class HangarStudio {
   async mountWeapon(weaponAsset, slot, mode, adjustment) {
     this.app.playerMotion?.cancel();
     if (!this.app.activeJobId && !this.mountedJobId) {
-      this.app._showToast('尚未构建整备机体，请先在【整备工坊】构建基底机甲', 'info');
+      this.app._showToast(t('studio.mountNeedsMech'), 'info');
       return;
     }
     if (this.isOperating) return;
@@ -1628,12 +1637,12 @@ export class HangarStudio {
     mode = mode || this.selectedMountMode || 'experimental';
     adjustment = adjustment || this.mountAdjustment || { translation: [0, 0, 0], rotation: [0, 0, 0] };
 
-    const slotNames = { right_hand: '右手 (R-Arm)', left_hand: '左手 (L-Arm)', right_back: '右肩 (R-Back)', left_back: '左肩 (L-Back)' };
+    const slotNames = { right_hand: t('studio.slotRightHand'), left_hand: t('studio.slotLeftHand'), right_back: t('studio.slotRightBack'), left_back: t('studio.slotLeftBack') };
     const slotLabel = slotNames[slot] || slot;
-    const modeLabel = mode === 'verified' ? '验证装配' : '实验性装配';
+    const modeLabel = mode === 'verified' ? t('studio.modeVerified') : t('studio.modeExperimental');
 
-    this.app._showJobOverlay(true, `正在请求挂载 [${weaponAsset.name || weaponAsset.resource_id}] 至 ${slotLabel} (${modeLabel})...`, 15);
-    this.app._showToast(`正在挂载武器至 ${slotLabel}...`, 'info');
+    this.app._showJobOverlay(true, t('studio.mountRequesting', { name: weaponAsset.name || weaponAsset.resource_id, slot: slotLabel, mode: modeLabel }), 15);
+    this.app._showToast(t('studio.mountingWeapon', { slot: slotLabel }), 'info');
 
     try {
       const res = await fetch(`${window.location.origin}/api/library/mount`, {
@@ -1659,7 +1668,7 @@ export class HangarStudio {
       this.activeJobId = data.job_id;
 
       const completed = await api.pollJob(data.job_id, job => {
-        this.app._showJobOverlay(true, job.message || '正在确认挂点与装配…', jobPercent(job));
+        this.app._showJobOverlay(true, job.message || t('studio.mountConfirming'), jobPercent(job));
       });
 
       // 确保装配机体作为 assembly 加载与居中构图
@@ -1686,14 +1695,14 @@ export class HangarStudio {
       const isExp = completed.result.mount_verification === 'experimental_not_verified';
       const statusEl = document.getElementById('model-support-status');
       if (statusEl) {
-        statusEl.textContent = `${isExp ? '[实验性装配]' : '[验证装配]'} ${weaponAsset.name} 已挂载至 ${slotLabel} · 保留原机体 HKX · 材质来源见摄影室 · 动态外观未验证`;
+        statusEl.textContent = t('studio.statusMounted', { badge: isExp ? t('studio.badgeBracketExperimental') : t('studio.badgeBracketVerified'), name: weaponAsset.name, slot: slotLabel });
         statusEl.title = (completed.result.warnings || []).join('\n');
       }
 
       this.renderInspector();
-      this.app._showToast(`武器已成功挂载 (${modeLabel})；可继续添加其他槽位，或保存/导出装配。`, 'success');
+      this.app._showToast(t('studio.mountDone', { mode: modeLabel }), 'success');
     } catch (err) {
-      this.app._showToast(`挂载未执行: ${err.message}`, 'info');
+      this.app._showToast(t('studio.mountFailed', { msg: err.message }), 'info');
     } finally {
       this.isOperating = false;
       this.activeJobId = null;
@@ -1706,11 +1715,11 @@ export class HangarStudio {
    */
   async saveAssemblyPreset() {
     if (!this.mountedJobId) {
-      this.app._showToast('请先挂载武器后再保存组合配方', 'info');
+      this.app._showToast(t('studio.savePresetNeedMount'), 'info');
       return;
     }
     const nameInput = document.getElementById('lib-preset-name-input');
-    const name = nameInput?.value?.trim() || '我的武器组合';
+    const name = nameInput?.value?.trim() || t('studio.presetDefaultName');
 
     try {
       const res = await fetch(`${window.location.origin}/api/library/save_assembly`, {
@@ -1724,10 +1733,10 @@ export class HangarStudio {
       }
       const recipe = await res.json();
       await this.refreshLibrary();
-      this.app._showToast(`装配组合配方已保存: ${recipe.name}`, 'success');
+      this.app._showToast(t('studio.presetSaved', { name: recipe.name }), 'success');
       this.renderInspector();
     } catch (err) {
-      this.app._showToast(`保存组合配方失败: ${err.message}`, 'error');
+      this.app._showToast(t('studio.presetSaveFailed', { msg: err.message }), 'error');
     }
   }
 
@@ -1737,16 +1746,16 @@ export class HangarStudio {
    */
   async loadAssemblyPreset(presetId) {
     if (!this.app.activeJobId && !this.mountedJobId) {
-      this.app._showToast('请先在【整备工坊】构建基底机体', 'info');
+      this.app._showToast(t('studio.loadPresetNeedMech'), 'info');
       return;
     }
     if (this.isOperating) return;
     this.isOperating = true;
 
     const preset = (this.libraryData.assembly_presets || []).find(p => p.id === presetId);
-    const presetName = preset?.name || '已存武器组合';
+    const presetName = preset?.name || t('studio.presetFallbackName');
 
-    this.app._showJobOverlay(true, `正在载入武器装配组合 [${presetName}]...`, 15);
+    this.app._showJobOverlay(true, t('studio.presetLoading', { name: presetName }), 15);
     try {
       const buildJobId = this.mountedJobId || this.app.activeJobId;
       const res = await fetch(`${window.location.origin}/api/library/load_assembly`, {
@@ -1762,7 +1771,7 @@ export class HangarStudio {
       this.activeJobId = data.job_id;
 
       const completed = await api.pollJob(data.job_id, job => {
-        this.app._showJobOverlay(true, job.message || '正在载入并校验装配组合…', jobPercent(job));
+        this.app._showJobOverlay(true, job.message || t('studio.presetValidating'), jobPercent(job));
       });
 
       const loaded = await this.app.viewer.loadModel(completed.result.model_url, {
@@ -1787,16 +1796,16 @@ export class HangarStudio {
       const isExp = completed.result.mount_verification === 'experimental_not_verified';
       const statusEl = document.getElementById('model-support-status');
       if (statusEl) {
-        statusEl.textContent = `${isExp ? '[实验性装配]' : '[验证装配]'} 组合配方: ${presetName} · 保留原机体 HKX · 材质来源见摄影室 · 动态外观未验证`;
+        statusEl.textContent = t('studio.statusPresetLoaded', { badge: isExp ? t('studio.badgeBracketExperimental') : t('studio.badgeBracketVerified'), name: presetName });
         statusEl.title = (completed.result.warnings || []).join('\n');
       }
 
       this.app._showJobOverlay(false);
-      this.app._showToast(`已成功载入武器组合: ${presetName}`, 'success');
+      this.app._showToast(t('studio.presetLoadedToast', { name: presetName }), 'success');
       this.renderInspector();
     } catch (err) {
       this.app._showJobOverlay(false);
-      this.app._showToast(`载入组合失败: ${err.message}`, 'error');
+      this.app._showToast(t('studio.presetLoadFailed', { msg: err.message }), 'error');
     } finally {
       this.isOperating = false;
       this.activeJobId = null;

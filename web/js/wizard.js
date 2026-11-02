@@ -5,6 +5,8 @@
 
 import { api } from './api.js';
 import { jobPercent } from './dom.js';
+import { t, applyDOM } from './i18n.js';
+import './strings-wizard.js';
 
 const escapeText = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -14,7 +16,7 @@ export class ResourceWizard {
   constructor(modalId, options = {}) {
     this.modal = document.getElementById(modalId);
     if (!this.modal) {
-      throw new Error(`找不到资源向导模态框 #${modalId}`);
+      throw new Error(t('wizard.modalNotFound', { id: modalId }));
     }
 
     this.onImportComplete = options.onImportComplete || null;
@@ -37,87 +39,76 @@ export class ResourceWizard {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
             </svg>
-            本地资源初始化与导入向导
+            <span data-i18n="wizard.title"></span>
           </span>
           <button class="modal-close-btn" data-action="close">&times;</button>
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label class="form-label">导入模式</label>
+            <label class="form-label" data-i18n="wizard.modeLabel"></label>
             <div style="display: flex; gap: 12px;">
               <label class="filter-checkbox-label" style="font-weight: 600; color: #fff;">
                 <input type="radio" name="import-mode" value="expanded" checked />
-                展开资源目录 (Expanded - 推荐 / 即时可用)
+                <span data-i18n="wizard.modeExpanded"></span>
               </label>
               <label id="label-import-mode-game" class="filter-checkbox-label" style="color: var(--text-secondary);">
                 <input type="radio" name="import-mode" value="game" />
-                <span id="text-import-mode-game">AC6 游戏原版目录 (Game Root)</span>
+                <span id="text-import-mode-game">${t('wizard.gameRoot')}</span>
               </label>
             </div>
-            <span id="import-mode-hint" class="form-hint">已解包或展开的 parts/clips 目录无需重复解包，可最快建立索引与装配关系。</span>
+            <span id="import-mode-hint" class="form-hint" data-i18n="wizard.hintInitial"></span>
           </div>
 
           <div id="toolchain-panel" class="toolchain-panel" hidden>
             <div class="toolchain-head">
-              <span class="toolchain-title">AC6 解包组件</span>
-              <span id="toolchain-state" class="toolchain-state">检测中…</span>
+              <span class="toolchain-title" data-i18n="wizard.toolchainTitle"></span>
+              <span id="toolchain-state" class="toolchain-state" data-i18n="wizard.toolchainChecking"></span>
             </div>
             <div id="toolchain-detail" class="toolchain-detail"></div>
             <div class="toolchain-actions">
-              <button id="btn-install-toolchain" class="btn-cyan" type="button">
-                一键安装缺失组件
-              </button>
-              <button id="btn-pick-witchy" class="btn-icon" type="button">
-                选择已有 WitchyBND
-              </button>
-              <button id="btn-pick-game-tools" class="btn-icon" type="button">
-                从 AC6 目录复用 Oodle
-              </button>
-              <button id="btn-refresh-toolchain" class="btn-icon" type="button">
-                重新检测
-              </button>
+              <button id="btn-install-toolchain" class="btn-cyan" type="button" data-i18n="wizard.installMissing"></button>
+              <button id="btn-pick-witchy" class="btn-icon" type="button" data-i18n="wizard.pickWitchy"></button>
+              <button id="btn-pick-game-tools" class="btn-icon" type="button" data-i18n="wizard.reuseOodle"></button>
+              <button id="btn-refresh-toolchain" class="btn-icon" type="button" data-i18n="wizard.recheck"></button>
             </div>
             <div id="toolchain-progress" class="form-hint" hidden></div>
           </div>
 
           <div class="form-group">
-            <label class="form-label">资源目录绝对路径</label>
+            <label class="form-label" data-i18n="wizard.pathLabel"></label>
             <div class="input-with-button">
-              <input type="text" id="input-import-path" placeholder="选择已有的展开资源目录，可用分号分隔多个目录" value="" />
-              <button id="btn-browse-folder" class="btn-cyan">浏览文件夹...</button>
+              <input type="text" id="input-import-path" placeholder="" value="" data-i18n-placeholder="wizard.pathPlaceholder" />
+              <button id="btn-browse-folder" class="btn-cyan" data-i18n="wizard.browseFolder"></button>
             </div>
             <div style="display: flex; gap: 8px; margin-top: 4px;">
-              <button id="btn-quick-fill-verify" class="btn-icon" style="font-size: 11px;">
-                恢复上次导入路径
-              </button>
+              <button id="btn-quick-fill-verify" class="btn-icon" style="font-size: 11px;" data-i18n="wizard.restoreLastPath"></button>
             </div>
           </div>
 
           <!-- 导入任务动态进度与日志视窗 -->
           <div id="import-progress-area" style="display: none; flex-direction: column; gap: 8px; margin-top: 6px;">
             <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: var(--font-mono);">
-              <span id="import-stage-label">准备开始...</span>
+              <span id="import-stage-label" data-i18n="wizard.stageInitial"></span>
               <span id="import-percent-label">0%</span>
             </div>
             <div class="progress-bar-track">
               <div id="import-progress-bar" class="progress-bar-fill"></div>
             </div>
-            <div id="import-log-console" style="background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 8px; height: 110px; overflow-y: auto; font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); line-height: 1.4;">
-              等待启动...
-            </div>
+            <div id="import-log-console" style="background: var(--bg-primary); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 8px; height: 110px; overflow-y: auto; font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); line-height: 1.4;" data-i18n="wizard.logIdle"></div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="modal-close-btn-secondary" data-action="close">取消</button>
+          <button class="modal-close-btn-secondary" data-action="close" data-i18n="wizard.cancel"></button>
           <button id="btn-start-import" class="btn-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
-            开始扫描并导入
+            <span data-i18n="wizard.startImport"></span>
           </button>
         </div>
       </div>
     `;
+    applyDOM(this.modal);
   }
 
   _bindEvents() {
@@ -169,7 +160,7 @@ export class ResourceWizard {
         } catch (_) { /* manual entry below */ }
       }
       if (!path) {
-        path = prompt('请输入 WitchyBND.exe 或所在文件夹的完整路径：') || '';
+        path = prompt(t('wizard.promptWitchy')) || '';
       }
       if (path.trim()) {
         this._witchyPath = path.trim();
@@ -185,7 +176,7 @@ export class ResourceWizard {
         } catch (_) { /* manual entry below */ }
       }
       if (!path) {
-        path = prompt('请输入 AC6 安装目录或 Game 子目录的完整路径：') || '';
+        path = prompt(t('wizard.promptGameDir')) || '';
       }
       if (path.trim()) {
         this._gameDir = path.trim();
@@ -217,7 +208,7 @@ export class ResourceWizard {
           if (dirHandle && dirHandle.name) {
             // 浏览器安全限制可能无法直接获取物理驱动器盘符完整绝对路径
             // 若用户提供了目录句柄，提示并保留手动编辑
-            alert(`已选中目录: "${dirHandle.name}"。由于浏览器本地沙箱安全规范，请在输入框确认或微调完整的本地绝对盘符路径。`);
+            alert(t('wizard.pickedDirSandbox', { name: dirHandle.name }));
           }
         } catch (e) {
           if (e.name !== 'AbortError') {
@@ -225,7 +216,7 @@ export class ResourceWizard {
           }
         }
       } else {
-        alert('请在文本框输入本地展开资源目录的完整绝对路径。');
+        alert(t('wizard.enterPathManually'));
       }
     });
 
@@ -236,7 +227,7 @@ export class ResourceWizard {
 
       const pathVal = inputPath.value.trim();
       if (!pathVal) {
-        alert('请输入要扫描的资源目录路径');
+        alert(t('wizard.pathRequired'));
         return;
       }
 
@@ -279,8 +270,8 @@ export class ResourceWizard {
     }
     if (gameText) {
       gameText.textContent = supported
-        ? 'AC6 游戏原版目录 (Game Root - 已就绪)'
-        : 'AC6 游戏原版目录 (Game Root · 需本地解包组件)';
+        ? t('wizard.gameRootReady')
+        : t('wizard.gameRootNeedsToolchain');
     }
     if (gameLabel) {
       gameLabel.style.opacity = supported ? '1' : '0.6';
@@ -299,25 +290,25 @@ export class ResourceWizard {
     panel.classList.toggle('is-ready', ready);
     const state = this.modal.querySelector('#toolchain-state');
     if (state) {
-      state.textContent = ready ? '已就绪' : `缺少 ${missing.length} 项`;
+      state.textContent = ready ? t('wizard.toolchainReady') : t('wizard.toolchainMissing', { count: missing.length });
       state.classList.toggle('is-ready', ready);
     }
     const detail = this.modal.querySelector('#toolchain-detail');
     if (detail) {
       const dotnet = info.dotnet || {};
-      const oodle = info.oodle_ready ? '' : '缺少 oo2core_8_win64.dll（KRAK 部件包需要）';
+      const oodle = info.oodle_ready ? '' : t('wizard.oodleMissing');
       detail.innerHTML = ready
-        ? `<span>NuxeBridge / Nuxe 索引 / .NET 10 / WitchyBND 均已检测到。</span>
+        ? `<span>${t('wizard.toolchainAllReady')}</span>
            ${oodle ? `<span>${escapeText(oodle)}</span>` : ''}`
         : `<span>${missing.map(item => `<b>${escapeText(item)}</b>`).join(' · ')}</span>
-           <span>${dotnet.desktop_10 ? '运行时版本：' + escapeText(dotnet.version || '') : '未检测到 .NET 10 Desktop Runtime'}</span>
+           <span>${dotnet.desktop_10 ? t('wizard.dotnetVersion', { version: escapeText(dotnet.version || '') }) : t('wizard.dotnetMissing')}</span>
            ${oodle ? `<span>${escapeText(oodle)}</span>` : ''}`;
     }
     const install = this.modal.querySelector('#btn-install-toolchain');
     if (install) {
       install.hidden = ready;
       install.disabled = this.isInstalling;
-      install.textContent = this.isInstalling ? '正在安装…' : '一键安装缺失组件';
+      install.textContent = this.isInstalling ? t('wizard.installing') : t('wizard.installMissing');
     }
     const progress = this.modal.querySelector('#toolchain-progress');
     if (progress) {
@@ -329,24 +320,24 @@ export class ResourceWizard {
   async _installToolchain(witchyPath = '', gameDir = '') {
     if (this.isInstalling) return;
     this.isInstalling = true;
-    this.installMessage = '正在准备安装…';
+    this.installMessage = t('wizard.installPreparing');
     this._renderToolchain();
     try {
       if (!api.isConnected) await api.getHealth();
-      if (!api.isConnected) throw new Error('本地服务未连接，无法安装依赖。');
+      if (!api.isConnected) throw new Error(t('wizard.installDisconnected'));
       const payload = {};
       if (witchyPath) payload.witchy_path = witchyPath;
       if (gameDir) payload.game_dir = gameDir;
       const submitted = await api.installToolchain(payload);
       await api.pollJob(submitted.id, job => {
-        this.installMessage = `${job.message || job.stage || '安装中…'}`;
+        this.installMessage = `${job.message || job.stage || t('wizard.installWorking')}`;
         this._renderToolchain();
       });
-      this.installMessage = '安装完成，正在重新检测…';
+      this.installMessage = t('wizard.installDone');
       await this._syncCapabilities({ force: true });
       this._renderToolchain();
     } catch (err) {
-      this.installMessage = `安装失败：${err.message}`;
+      this.installMessage = t('wizard.installFailed', { msg: err.message });
       this._renderToolchain();
     } finally {
       this.isInstalling = false;
@@ -360,11 +351,11 @@ export class ResourceWizard {
     if (!hint) return;
     const mode = modeRadio ? modeRadio.value : 'expanded';
     if (mode === 'game' && this.gameModeInfo?.supported) {
-      hint.textContent = '依赖已就绪：可直接选择 AC6 安装根目录或 Game 子目录，只读提取玩家部件、敌方模型与动作、武器和材质。首次耗时取决于游戏版本与磁盘速度。';
+      hint.textContent = t('wizard.hintGameReady');
     } else if (!this.gameModeInfo?.supported && this.gameModeInfo?.reason) {
-      hint.textContent = `展开目录无需解包即可快速建立索引。注：当前环境未检测到完整本地解包组件（${(this.gameModeInfo?.toolchain?.missing || ['NuxeBridge', 'WitchyBND']).join(' / ')}），已禁用 Game Root 直连，请先准备包含 *.flver、Skeleton.hkx、*.hkx 的展开目录。`;
+      hint.textContent = t('wizard.hintGameMissing', { missing: (this.gameModeInfo?.toolchain?.missing || ['NuxeBridge', 'WitchyBND']).join(' / ') });
     } else {
-      hint.textContent = '已解包或展开的 parts/clips 目录无需重复解包，可最快建立索引与装配关系；也可切换至 Game Root 直接从 AC6 安装目录只读提取。';
+      hint.textContent = t('wizard.hintExpanded');
     }
   }
 
@@ -384,8 +375,8 @@ export class ResourceWizard {
     btnStart.disabled = true;
     progressBar.style.width = '5%';
     percentLabel.textContent = '5%';
-    stageLabel.textContent = '正在连接导入服务...';
-    logConsole.textContent = `[${new Date().toLocaleTimeString()}] 提交扫描任务: ${roots.join('; ')} (模式: ${mode})`;
+    stageLabel.textContent = t('wizard.stageConnecting');
+    logConsole.textContent = `[${new Date().toLocaleTimeString()}] ${t('wizard.logSubmit', { roots: roots.join('; '), mode })}`;
 
     const appendLog = text => {
       const line = document.createElement('div');
@@ -401,30 +392,30 @@ export class ResourceWizard {
       }
 
       if (!api.isConnected) {
-        throw new Error('本地服务未连接，资源尚未导入。请重新启动 HANGAR 后重试。');
+        throw new Error(t('wizard.serviceDisconnected'));
       }
 
-      appendLog('发送 POST /api/import 请求...');
+      appendLog(t('wizard.logPosting'));
       const importRes = await api.importResources(roots, mode);
       const jobId = importRes.job_id;
-      appendLog(`导入任务已分发，作业编号: ${jobId}`);
+      appendLog(t('wizard.logDispatched', { id: jobId }));
 
       // 轮询作业状态
       await api.pollJob(jobId, job => {
         const pct = jobPercent(job);
         progressBar.style.width = `${Math.max(5, pct)}%`;
         percentLabel.textContent = `${pct}%`;
-        stageLabel.textContent = job.message || job.stage || '处理中...';
+        stageLabel.textContent = job.message || job.stage || t('wizard.stageProcessing');
 
         if (job.stage) {
-          appendLog(`阶段 [${job.stage}]: ${job.message || '运行中'}`);
+          appendLog(t('wizard.logStage', { stage: job.stage, message: job.message || t('wizard.logRunning') }));
         }
       });
 
-      appendLog('资源导入与索引成功完成！');
+      appendLog(t('wizard.logDone'));
       progressBar.style.width = '100%';
       percentLabel.textContent = '100%';
-      stageLabel.textContent = '导入就绪';
+      stageLabel.textContent = t('wizard.stageReady');
 
       if (this.onImportComplete) {
         await this.onImportComplete();
@@ -433,10 +424,10 @@ export class ResourceWizard {
       // Model preparation is complete; reveal the viewport immediately.
       this.close();
     } catch (err) {
-      appendLog(`导入失败: ${err.message}`);
-      stageLabel.textContent = '导入中断';
+      appendLog(t('wizard.logFailed', { msg: err.message }));
+      stageLabel.textContent = t('wizard.stageInterrupted');
       progressBar.style.backgroundColor = 'var(--accent-crimson)';
-      alert(`资源导入发生异常: ${err.message}\n${err.details ? JSON.stringify(err.details) : ''}`);
+      alert(t('wizard.importErrorAlert', { msg: err.message, details: err.details ? JSON.stringify(err.details) : '' }));
     } finally {
       this.isImporting = false;
       btnStart.disabled = false;

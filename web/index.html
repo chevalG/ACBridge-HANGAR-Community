@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="./favicon.ico">
-  <title>ACBridge HANGAR · 3.1.2</title>
+  <title>ACBridge HANGAR · 3.1.3</title>
   <link rel="stylesheet" href="./css/hangar.css">
   <link rel="stylesheet" href="./css/studio.css">
   <script type="importmap">
@@ -20,15 +20,15 @@
   <!-- 顶栏 (Header) -->
   <header id="app-header">
     <div class="brand-section">
-      <div class="brand-logo" title="ACBridge HANGAR 3.1.2">
+      <div class="brand-logo" title="ACBridge HANGAR 3.1.3">
         <img src="./icon-256.png" alt="" width="18" height="18">
       </div>
       <div class="brand-title-wrap">
         <div class="brand-title">
           ACBridge HANGAR
-          <span class="brand-badge">3.1.2</span>
+          <span class="brand-badge">3.1.3</span>
         </div>
-        <div class="brand-subtitle">《装甲核心 VI》工业馆藏与装配工作室</div>
+        <div class="brand-subtitle" data-i18n="ui.brand.subtitle">《装甲核心 VI》工业馆藏与装配工作室</div>
       </div>
     </div>
 
@@ -36,50 +36,56 @@
     <div class="header-center-info">
       <div class="engine-status-pill">
         <span id="status-indicator-dot" class="status-dot offline"></span>
-        <span id="engine-status-text">检测引擎服务中...</span>
+        <span id="engine-status-text" data-i18n="ui.status.checking">检测引擎服务中...</span>
       </div>
       <div id="header-library-summary" class="header-library-summary">
-        馆藏资产: 正在同步...
+        <span data-i18n="ui.library.summarySyncing">馆藏资产: 正在同步...</span>
       </div>
     </div>
 
     <!-- 顶部操作按钮 -->
     <div class="header-actions">
       <!-- 快捷返回整备机体 (独立预览时可见) -->
-      <button id="btn-header-return-mech" class="btn-header-return" style="display: none;" title="返回当前已烘焙整备机甲">
+      <button id="btn-header-return-mech" class="btn-header-return" style="display: none;" data-i18n-title="ui.mech.returnTip">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="1 4 1 10 7 10"></polyline>
           <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
         </svg>
-        返回整备机体
+        <span data-i18n="ui.mech.return">返回整备机体</span>
       </button>
 
-      <button id="btn-toggle-animations" class="btn-cyan" title="展开或收起动画资源库">动作库</button>
+      <button id="btn-toggle-animations" class="btn-cyan" data-i18n-title="ui.clips.libraryTip"><span data-i18n="ui.clips.library">动作库</span></button>
 
-      <button id="btn-open-wizard" class="btn-cyan" title="选择游戏目录或展开资源并建立索引">
+      <button id="btn-open-wizard" class="btn-cyan" data-i18n-title="ui.wizard.openTip">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
         </svg>
-        资源导入向导
+        <span data-i18n="ui.wizard.open">资源导入向导</span>
       </button>
 
-      <button id="btn-open-presets" title="管理保存的机体配置与内置方案">
+      <button id="btn-open-presets" data-i18n-title="ui.presets.openTip">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
           <polyline points="17 21 17 13 7 13 7 21"></polyline>
           <polyline points="7 3 7 8 15 8"></polyline>
         </svg>
-        预设方案
+        <span data-i18n="ui.presets.open">预设方案</span>
       </button>
 
-      <button id="btn-open-export" class="btn-primary" title="导出当前整备机甲与动作至真实 GLB 模型" disabled>
+      <button id="btn-open-export" class="btn-primary" data-i18n-title="ui.export.openTip" disabled>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="7 10 12 15 17 10"></polyline>
           <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
-        导出机甲 (GLB)
+        <span data-i18n="ui.export.open">导出机甲 (GLB)</span>
       </button>
+
+      <!-- 界面语言切换（元标签，不随语言翻译） -->
+      <div id="lang-switcher" class="lang-switcher" role="group" aria-label="Language / 界面语言">
+        <button id="btn-lang-zh" class="lang-btn" type="button" title="切换到中文界面">中</button>
+        <button id="btn-lang-en" class="lang-btn" type="button" title="Switch to English">EN</button>
+      </div>
     </div>
   </header>
 
@@ -87,21 +93,21 @@
   <main id="app-main">
     <!-- 垂直主模式分类导轨 (Category Rail) -->
     <nav id="app-category-rail">
-      <button id="rail-item-workbench" class="rail-item active" title="机体装配工坊 (四槽部件组装与 HKX 动作)">
+      <button id="rail-item-workbench" class="rail-item active" data-i18n-title="ui.rail.workbenchTip">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
         </svg>
-        <span class="rail-label">整备</span>
+        <span class="rail-label" data-i18n="ui.rail.workbench">整备</span>
       </button>
 
-      <button id="rail-item-library" class="rail-item" title="工业馆藏档案 (敌机、军械与部件独立浏览)">
+      <button id="rail-item-library" class="rail-item" data-i18n-title="ui.rail.libraryTip">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
           <line x1="12" y1="6" x2="16" y2="6"></line>
           <line x1="12" y1="10" x2="16" y2="10"></line>
         </svg>
-        <span class="rail-label">馆藏</span>
+        <span class="rail-label" data-i18n="ui.rail.library">馆藏</span>
         <span id="rail-library-badge" class="rail-badge"></span>
       </button>
 
@@ -120,7 +126,7 @@
         <div class="library-header">
           <div class="library-title-row">
             <div class="library-heading">
-              工业馆藏档案库
+              <span data-i18n="ui.library.heading">工业馆藏档案库</span>
               <span class="library-heading-badge">MUSEUM</span>
             </div>
           </div>
@@ -128,15 +134,15 @@
           <!-- 三大资产分类选项卡 -->
           <div class="library-category-tabs">
             <button class="lib-tab-btn active" data-tab="player">
-              机体部件
+              <span data-i18n="ui.library.tabPlayer">机体部件</span>
               <span id="tab-count-player" class="tab-count">0</span>
             </button>
             <button class="lib-tab-btn" data-tab="enemy">
-              敌机/BOSS
+              <span data-i18n="ui.library.tabEnemy">敌机/BOSS</span>
               <span id="tab-count-enemy" class="tab-count">0</span>
             </button>
             <button class="lib-tab-btn" data-tab="weapon">
-              军械装备
+              <span data-i18n="ui.library.tabWeapon">军械装备</span>
               <span id="tab-count-weapon" class="tab-count">0</span>
             </button>
           </div>
@@ -144,9 +150,9 @@
 
         <!-- 显式目录输入与导入条 -->
         <div class="library-import-bar">
-          <input type="text" id="library-root-input" class="lib-import-input" placeholder="输入展开资源目录 (如 data/local-inputs)..." spellcheck="false" />
-          <button id="btn-library-browse" class="lib-btn-browse" title="唤起本地文件夹选择器">浏览...</button>
-          <button id="btn-library-import" class="lib-btn-import" title="深度扫描并更新索引">导入馆藏</button>
+          <input type="text" id="library-root-input" class="lib-import-input" data-i18n-placeholder="ui.library.rootPlaceholder" placeholder="输入展开资源目录 (如 data/local-inputs)..." spellcheck="false" />
+          <button id="btn-library-browse" class="lib-btn-browse" data-i18n-title="ui.library.browseTip" data-i18n="ui.common.browse">浏览...</button>
+          <button id="btn-library-import" class="lib-btn-import" data-i18n-title="ui.library.importTip" data-i18n="ui.library.import">导入馆藏</button>
         </div>
 
         <!-- 搜索检索框与部件槽位过滤 -->
@@ -156,15 +162,15 @@
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <input type="text" id="library-search-input" class="lib-search-input" placeholder="搜索部件代号或名称 (如 c4200, 3010, tian)..." spellcheck="false" />
+            <input type="text" id="library-search-input" class="lib-search-input" data-i18n-placeholder="ui.library.searchPlaceholder" placeholder="搜索部件代号或名称 (如 c4200, 3010, tian)..." spellcheck="false" />
           </div>
 
           <div id="lib-filter-tags-row" class="lib-filter-tags">
-            <button class="lib-filter-chip active" data-slot="ALL">全部部位</button>
-            <button class="lib-filter-chip" data-slot="HD">头部 HD</button>
-            <button class="lib-filter-chip" data-slot="BD">核心 BD</button>
-            <button class="lib-filter-chip" data-slot="AM">手臂 AM</button>
-            <button class="lib-filter-chip" data-slot="LG">腿部 LG</button>
+            <button class="lib-filter-chip active" data-slot="ALL" data-i18n="ui.library.filterAll">全部部位</button>
+            <button class="lib-filter-chip" data-slot="HD" data-i18n="ui.library.filterHD">头部 HD</button>
+            <button class="lib-filter-chip" data-slot="BD" data-i18n="ui.library.filterBD">核心 BD</button>
+            <button class="lib-filter-chip" data-slot="AM" data-i18n="ui.library.filterAM">手臂 AM</button>
+            <button class="lib-filter-chip" data-slot="LG" data-i18n="ui.library.filterLG">腿部 LG</button>
           </div>
         </div>
 
@@ -184,58 +190,58 @@
     <section id="viewport-container">
       <!-- 独立模型预览提示横幅 (含直接返回整备机体按钮) -->
       <div id="viewport-standalone-banner" class="viewport-standalone-banner" style="display: none;">
-        <span class="standalone-label">当前独立预览:</span>
+        <span class="standalone-label" data-i18n="ui.library.standaloneLabel">当前独立预览:</span>
         <span class="standalone-asset-name">-</span>
-        <button id="btn-viewport-return-mech" class="btn-standalone-return">返回整备机体</button>
+        <button id="btn-viewport-return-mech" class="btn-standalone-return" data-i18n="ui.mech.return">返回整备机体</button>
       </div>
 
       <!-- 诚实模型支持状态说明文字 -->
-      <div id="model-support-status">导入你的本地资源，开始装配机体。</div>
+      <div id="model-support-status" data-i18n="ui.status.initial">导入你的本地资源，开始装配机体。</div>
 
       <!-- 视窗悬浮操作栏 -->
       <div class="viewport-toolbar">
-        <button class="btn-icon btn-view-angle active" data-angle="orbit" title="自由透视旋转 (快捷键 1)">透视</button>
-        <button class="btn-icon btn-view-angle" data-angle="front" title="正视图 (快捷键 2)">正面</button>
-        <button class="btn-icon btn-view-angle" data-angle="side" title="右侧视图 (快捷键 3)">侧面</button>
-        <button class="btn-icon btn-view-angle" data-angle="top" title="俯视图 (快捷键 4)">俯视</button>
-        <button id="btn-view-fit" class="btn-icon" title="自动适应机体尺寸居中 (快捷键 F)">适应</button>
-        <button id="btn-view-only" class="btn-icon" title="纯模型观赏；按 Esc 恢复界面">观赏</button>
+        <button class="btn-icon btn-view-angle active" data-angle="orbit" data-i18n-title="ui.view.orbitTip" data-i18n="ui.view.orbit">透视</button>
+        <button class="btn-icon btn-view-angle" data-angle="front" data-i18n-title="ui.view.frontTip" data-i18n="ui.view.front">正面</button>
+        <button class="btn-icon btn-view-angle" data-angle="side" data-i18n-title="ui.view.sideTip" data-i18n="ui.view.side">侧面</button>
+        <button class="btn-icon btn-view-angle" data-angle="top" data-i18n-title="ui.view.topTip" data-i18n="ui.view.top">俯视</button>
+        <button id="btn-view-fit" class="btn-icon" data-i18n-title="ui.view.fitTip" data-i18n="ui.view.fit">适应</button>
+        <button id="btn-view-only" class="btn-icon" data-i18n-title="ui.view.onlyTip" data-i18n="ui.view.only">观赏</button>
 
         <div class="toolbar-divider"></div>
 
-        <button id="btn-view-wireframe" class="btn-icon" title="线框材质切换 (快捷键 W)">线框</button>
-        <button id="btn-view-skeleton" class="btn-icon" title="骨骼关节辅助显示 (快捷键 B)">骨骼</button>
-        <button id="btn-view-grid" class="btn-icon active" title="地台网格开关 (快捷键 G)">网格</button>
+        <button id="btn-view-wireframe" class="btn-icon" data-i18n-title="ui.view.wireframeTip" data-i18n="ui.view.wireframe">线框</button>
+        <button id="btn-view-skeleton" class="btn-icon" data-i18n-title="ui.view.skeletonTip" data-i18n="ui.view.skeleton">骨骼</button>
+        <button id="btn-view-grid" class="btn-icon active" data-i18n-title="ui.view.gridTip" data-i18n="ui.view.grid">网格</button>
 
         <div class="toolbar-divider"></div>
 
-        <button id="btn-render-studio" class="btn-icon" aria-expanded="false" aria-controls="render-studio-panel" title="灯光、镜头、材质来源与高清照片">摄影室</button>
-        <button id="btn-fxr-observer" class="btn-icon" hidden style="display:none" title="查看原版 FXR 的调用链、真实依赖图像与几何；不是完整特效模拟">特效资源</button>
+        <button id="btn-render-studio" class="btn-icon" aria-expanded="false" aria-controls="render-studio-panel" data-i18n-title="ui.view.studioTip" data-i18n="ui.view.studio">摄影室</button>
+        <button id="btn-fxr-observer" class="btn-icon" hidden style="display:none" data-i18n-title="ui.view.fxrTip" data-i18n="ui.view.fxr">特效资源</button>
 
-        <button id="btn-capture-screenshot" class="btn-icon" title="截取当前视窗超清快照 (PNG)">
+        <button id="btn-capture-screenshot" class="btn-icon" data-i18n-title="ui.view.captureTip">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
             <circle cx="12" cy="13" r="4"></circle>
           </svg>
-          拍照
+          <span data-i18n="ui.view.capture">拍照</span>
         </button>
       </div>
 
-      <section id="render-studio-panel" class="render-studio-panel" aria-label="渲染工作室" hidden>
-        <div class="render-studio-heading"><div><span class="studio-eyebrow">MATERIAL AWAKENING</span><h2>渲染工作室</h2></div><button id="btn-close-render-studio" class="btn-icon" aria-label="关闭渲染工作室">×</button></div>
+      <section id="render-studio-panel" class="render-studio-panel" data-i18n-aria="ui.studio.aria" aria-label="渲染工作室" hidden>
+        <div class="render-studio-heading"><div><span class="studio-eyebrow">MATERIAL AWAKENING</span><h2 data-i18n="ui.studio.title">渲染工作室</h2></div><button id="btn-close-render-studio" class="btn-icon" data-i18n-aria="ui.studio.close" aria-label="关闭渲染工作室">×</button></div>
         <div class="render-preset-strip" aria-label="光照环境">
-          <button type="button" data-render-preset="studio" class="render-preset active"><span class="preset-swatch swatch-studio"></span><strong>摄影棚</strong><small>柔光 · 装甲质感</small></button>
-          <button type="button" data-render-preset="industrial" class="render-preset"><span class="preset-swatch swatch-industrial"></span><strong>工业机库</strong><small>冷暖光 · 轮廓</small></button>
-          <button type="button" data-render-preset="inspection" class="render-preset"><span class="preset-swatch swatch-inspection"></span><strong>工程检查</strong><small>中性光 · 细节</small></button>
+          <button type="button" data-render-preset="studio" class="render-preset active"><span class="preset-swatch swatch-studio"></span><strong data-i18n="ui.studio.presetStudio">摄影棚</strong><small data-i18n="ui.studio.presetStudioDesc">柔光 · 装甲质感</small></button>
+          <button type="button" data-render-preset="industrial" class="render-preset"><span class="preset-swatch swatch-industrial"></span><strong data-i18n="ui.studio.presetIndustrial">工业机库</strong><small data-i18n="ui.studio.presetIndustrialDesc">冷暖光 · 轮廓</small></button>
+          <button type="button" data-render-preset="inspection" class="render-preset"><span class="preset-swatch swatch-inspection"></span><strong data-i18n="ui.studio.presetInspection">工程检查</strong><small data-i18n="ui.studio.presetInspectionDesc">中性光 · 细节</small></button>
         </div>
-        <p id="render-preset-description" class="studio-help">柔和的中性主光与反射，适合展示装甲表面。</p>
-        <label class="studio-slider">曝光 <input id="render-exposure" type="range" min="0.25" max="2.5" step="0.05" value="1.05"><output id="render-exposure-value">1.05</output></label>
-        <label class="studio-slider">镜头 <input id="render-lens" type="range" min="20" max="70" step="1" value="40"><output id="render-lens-value">40°</output></label>
-        <div class="studio-control-row"><label for="select-bg-preset">背景</label><select id="select-bg-preset"><option value="preset">跟随光照环境</option><option value="charcoal">暗钢黑</option><option value="blue">深海蓝</option><option value="gray">中性灰</option><option value="porcelain">浅灰白</option><option value="hangar">经典机库深色</option></select></div>
-        <label class="studio-check"><input id="render-ground" type="checkbox" checked> 显示接影地台</label>
-        <div class="studio-photo-controls"><label for="photo-size">照片长边</label><select id="photo-size"><option value="2560">2K · 2560 px</option><option value="3840">4K · 3840 px</option></select><label class="studio-check"><input id="photo-transparent" type="checkbox"> 透明背景</label><button id="btn-studio-photo" class="btn-studio-photo">保存高清 PNG</button><p class="studio-help">保留当前构图与姿态，照片自动隐藏界面、网格和骨骼辅助线。</p></div>
-        <details class="studio-material-details"><summary><span>材质来源</span><span id="material-source-badge">等待模型</span></summary><p id="material-source-summary" class="studio-help">预览模型后查看贴图、材质及未验证边界。</p><div id="material-source-records"></div></details>
-        <details class="studio-material-details"><summary>贴图资源目录</summary><p class="studio-help">添加本机展开资源目录。支持 DDS、PC TPF 和 MATBIN（或 matbin.json）；每行一个目录。无法解析的容器及材质会保留具体诊断。</p><label for="material-roots-input" class="studio-help">本机目录</label><textarea id="material-roots-input" rows="3" spellcheck="false" aria-describedby="material-roots-state"></textarea><div class="studio-source-actions"><button id="btn-add-material-root" class="btn-mini">选择目录</button><button id="btn-save-material-roots" class="btn-mini">保存目录</button></div><p id="material-roots-state" class="studio-help" role="status">已导入模型目录会一同参与关联；额外目录只保存在本机。</p></details>
+        <p id="render-preset-description" class="studio-help" data-i18n="ui.studio.presetStudioLong">柔和的中性主光与反射，适合展示装甲表面。</p>
+        <label class="studio-slider"><span data-i18n="ui.studio.exposure">曝光</span> <input id="render-exposure" type="range" min="0.25" max="2.5" step="0.05" value="1.05"><output id="render-exposure-value">1.05</output></label>
+        <label class="studio-slider"><span data-i18n="ui.studio.lens">镜头</span> <input id="render-lens" type="range" min="20" max="70" step="1" value="40"><output id="render-lens-value">40°</output></label>
+        <div class="studio-control-row"><label for="select-bg-preset" data-i18n="ui.studio.background">背景</label><select id="select-bg-preset"><option value="preset" data-i18n="ui.studio.bgPreset">跟随光照环境</option><option value="charcoal" data-i18n="ui.studio.bgCharcoal">暗钢黑</option><option value="blue" data-i18n="ui.studio.bgBlue">深海蓝</option><option value="gray" data-i18n="ui.studio.bgGray">中性灰</option><option value="porcelain" data-i18n="ui.studio.bgPorcelain">浅灰白</option><option value="hangar" data-i18n="ui.studio.bgHangar">经典机库深色</option></select></div>
+        <label class="studio-check"><input id="render-ground" type="checkbox" checked> <span data-i18n="ui.studio.groundShadow">显示接影地台</span></label>
+        <div class="studio-photo-controls"><label for="photo-size" data-i18n="ui.studio.photoSize">照片长边</label><select id="photo-size"><option value="2560">2K · 2560 px</option><option value="3840">4K · 3840 px</option></select><label class="studio-check"><input id="photo-transparent" type="checkbox"> <span data-i18n="ui.studio.transparent">透明背景</span></label><button id="btn-studio-photo" class="btn-studio-photo" data-i18n="ui.studio.savePhoto">保存高清 PNG</button><p class="studio-help" data-i18n="ui.studio.photoHelp">保留当前构图与姿态，照片自动隐藏界面、网格和骨骼辅助线。</p></div>
+        <details class="studio-material-details"><summary><span data-i18n="ui.studio.materialSource">材质来源</span><span id="material-source-badge" data-i18n="ui.studio.waitingModel">等待模型</span></summary><p id="material-source-summary" class="studio-help" data-i18n="ui.studio.materialSourceHelp">预览模型后查看贴图、材质及未验证边界。</p><div id="material-source-records"></div></details>
+        <details class="studio-material-details"><summary data-i18n="ui.studio.textureRoots">贴图资源目录</summary><p class="studio-help" data-i18n="ui.studio.textureRootsHelp">添加本机展开资源目录。支持 DDS、PC TPF 和 MATBIN（或 matbin.json）；每行一个目录。无法解析的容器及材质会保留具体诊断。</p><label for="material-roots-input" class="studio-help" data-i18n="ui.studio.localDirs">本机目录</label><textarea id="material-roots-input" rows="3" spellcheck="false" aria-describedby="material-roots-state"></textarea><div class="studio-source-actions"><button id="btn-add-material-root" class="btn-mini" data-i18n="ui.studio.pickDir">选择目录</button><button id="btn-save-material-roots" class="btn-mini" data-i18n="ui.studio.saveDirs">保存目录</button></div><p id="material-roots-state" class="studio-help" role="status" data-i18n="ui.studio.rootsState">已导入模型目录会一同参与关联；额外目录只保存在本机。</p></details>
       </section>
 
       <!-- 任务进度浮动横幅 -->
@@ -245,12 +251,12 @@
             <circle cx="12" cy="12" r="10"></circle>
           </svg>
           <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-            <span id="job-progress-msg" style="font-size: 12px; font-weight: 600;">正在处理...</span>
+            <span id="job-progress-msg" style="font-size: 12px; font-weight: 600;" data-i18n="ui.job.processing">正在处理...</span>
             <div class="progress-bar-track">
               <div id="job-progress-fill" class="progress-bar-fill"></div>
             </div>
           </div>
-          <button id="btn-cancel-build" class="btn-mini" title="取消当前任务；场景中的已有模型保持不变">取消</button>
+          <button id="btn-cancel-build" class="btn-mini" data-i18n-title="ui.job.cancelTip" data-i18n="ui.common.cancel">取消</button>
         </div>
 
         <!-- 模型加载失败错误横幅: 紧凑提示，完整日志折叠，不破坏已有模型/动作/导出目标 -->
@@ -261,38 +267,38 @@
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
           <div class="alert-content" style="min-width: 0;">
-            <div class="alert-title" style="font-size: 11px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">载入未完成 · 当前场景已保留</div>
+            <div class="alert-title" style="font-size: 11px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" data-i18n="ui.error.loadTitle">载入未完成 · 当前场景已保留</div>
             <div id="model-error-msg" style="color: #fca5a5; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;"></div>
             <details id="model-error-diagnostics" style="display: none; margin-top: 3px;">
-              <summary style="cursor: pointer; font-size: 10px; color: #cbd5e1;">技术诊断与日志</summary>
+              <summary style="cursor: pointer; font-size: 10px; color: #cbd5e1;" data-i18n="ui.error.diagnostics">技术诊断与日志</summary>
               <pre id="model-error-details" style="display: none; margin: 4px 0 0; font-family: var(--font-mono); font-size: 10px; max-height: 140px; max-width: 100%; overflow: auto; white-space: pre-wrap; word-break: break-all; color: #cbd5e1;"></pre>
             </details>
           </div>
-          <button id="btn-dismiss-model-error" class="modal-close-btn" aria-label="关闭错误提示" style="color: #fca5a5; flex-shrink: 0;">&times;</button>
+          <button id="btn-dismiss-model-error" class="modal-close-btn" data-i18n-aria="ui.error.dismiss" aria-label="关闭错误提示" style="color: #fca5a5; flex-shrink: 0;">&times;</button>
         </div>
       </div>
 
       <!-- 机体指标 HUD (TELEMETRY) -->
       <div id="viewport-hud" class="viewport-hud">
-        <span class="hud-title">机体遥测参数 (TELEMETRY)</span>
+        <span class="hud-title" data-i18n="ui.hud.title">机体遥测参数 (TELEMETRY)</span>
         <div class="hud-stat-line">
-          <span>网格数量:</span>
+          <span data-i18n="ui.hud.meshes">网格数量:</span>
           <span id="hud-stat-meshes" class="hud-value">-</span>
         </div>
         <div class="hud-stat-line">
-          <span>三角面数:</span>
+          <span data-i18n="ui.hud.tris">三角面数:</span>
           <span id="hud-stat-tris" class="hud-value">-</span>
         </div>
         <div class="hud-stat-line">
-          <span>骨骼关节:</span>
+          <span data-i18n="ui.hud.joints">骨骼关节:</span>
           <span id="hud-stat-joints" class="hud-value">-</span>
         </div>
         <div class="hud-stat-line">
-          <span id="hud-stat-size-label">外形规格:</span>
+          <span id="hud-stat-size-label" data-i18n="ui.hud.size">外形规格:</span>
           <span id="hud-stat-size" class="hud-value">-</span>
         </div>
         <div class="hud-stat-line">
-          <span>当前动作:</span>
+          <span data-i18n="ui.hud.clip">当前动作:</span>
           <span id="hud-active-clip" class="hud-value" style="color: var(--accent-cyan);">-</span>
         </div>
       </div>
@@ -317,28 +323,28 @@
     <!-- 左侧：动作选择与重置姿态 -->
     <div class="transport-left">
       <div class="clip-select-wrap">
-        <span class="clip-select-label">当前播放动作</span>
-          <span id="active-clip-label">尚未载入动作</span>
+        <span class="clip-select-label" data-i18n="ui.transport.currentClip">当前播放动作</span>
+          <span id="active-clip-label" data-i18n="ui.transport.noClip">尚未载入动作</span>
       </div>
-      <button id="btn-transport-reset-pose" class="btn-icon" title="还原为初始绑定姿态 (T-Pose / Bind Pose)">
+      <button id="btn-transport-reset-pose" class="btn-icon" data-i18n-title="ui.transport.bindPoseTip">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"></circle>
           <line x1="12" y1="8" x2="12" y2="12"></line>
           <line x1="12" y1="16" x2="12.01" y2="16"></line>
         </svg>
-        初始姿态
+        <span data-i18n="ui.transport.bindPose">初始姿态</span>
       </button>
     </div>
 
     <!-- 中间：播放/暂停与时间轴 -->
     <div class="transport-center">
       <div class="transport-controls-row">
-        <button id="btn-transport-play" class="btn-play-pause" title="播放 / 暂停 (空格键)">
+        <button id="btn-transport-play" class="btn-play-pause" data-i18n-title="ui.transport.playPauseTip">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
         </button>
-        <button id="btn-transport-loop" class="btn-icon active" title="循环播放：已开启">
+        <button id="btn-transport-loop" class="btn-icon active" data-i18n-title="ui.transport.loopOn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="17 1 21 5 17 9"></polyline>
             <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
@@ -357,7 +363,7 @@
 
     <!-- 右侧：倍速与快捷调音 -->
     <div class="transport-right">
-      <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);">倍速:</span>
+      <span style="font-size: 11px; color: var(--text-muted); font-family: var(--font-mono);" data-i18n="ui.transport.speed">倍速:</span>
       <div class="speed-control-wrap">
         <button class="speed-btn" data-speed="0.25">0.25x</button>
         <button class="speed-btn" data-speed="0.5">0.5x</button>
@@ -377,28 +383,28 @@
   <div id="modal-library-export" class="modal-backdrop">
     <div class="library-export-dialog">
       <div class="lib-dialog-header">
-        <span class="lib-dialog-title">导出独立资产 (GLB)</span>
+        <span class="lib-dialog-title" data-i18n="ui.libExport.title">导出独立资产 (GLB)</span>
         <button id="btn-close-lib-export" class="modal-close-btn">&times;</button>
       </div>
       <div class="lib-dialog-body">
-        <div style="font-size: 11px; color: var(--c-porcelain-dim); line-height: 1.5;">
+        <div style="font-size: 11px; color: var(--c-porcelain-dim); line-height: 1.5;" data-i18n="ui.libExport.hint">
           保存当前预览的标准 GLB，包含已恢复材质、贴图与当前已载入的 HKX 骨骼轨。原版着色器、外部根运动及运行时状态的边界保留在来源记录中。
         </div>
         <div style="display: flex; flex-direction: column; gap: 4px;">
-          <label style="font-size: 11px; color: var(--c-porcelain-muted);">导出文件名</label>
+          <label style="font-size: 11px; color: var(--c-porcelain-muted);" data-i18n="ui.libExport.filename">导出文件名</label>
           <input type="text" id="lib-export-filename" class="lib-import-input" style="width: 100%;" placeholder="model.glb">
         </div>
         <div style="display: flex; flex-direction: column; gap: 4px;">
-          <label style="font-size: 11px; color: var(--c-porcelain-muted);">目标保存目录</label>
+          <label style="font-size: 11px; color: var(--c-porcelain-muted);" data-i18n="ui.libExport.dir">目标保存目录</label>
           <div style="display: flex; gap: 6px;">
             <input type="text" id="lib-export-dir" class="lib-import-input" style="flex: 1;" value="data/exports">
-            <button id="btn-browse-lib-export-dir" class="lib-btn-browse">浏览...</button>
+            <button id="btn-browse-lib-export-dir" class="lib-btn-browse" data-i18n="ui.common.browse">浏览...</button>
           </div>
         </div>
       </div>
       <div class="lib-dialog-footer">
-        <button id="btn-cancel-lib-export-modal" class="btn-inspect-return" style="font-size: 11px; padding: 5px 12px;">取消</button>
-        <button id="btn-confirm-lib-export" class="btn-inspect-export" style="font-size: 11px; padding: 5px 14px;">确认导出</button>
+        <button id="btn-cancel-lib-export-modal" class="btn-inspect-return" style="font-size: 11px; padding: 5px 12px;" data-i18n="ui.common.cancel">取消</button>
+        <button id="btn-confirm-lib-export" class="btn-inspect-export" style="font-size: 11px; padding: 5px 14px;" data-i18n="ui.libExport.confirm">确认导出</button>
       </div>
     </div>
   </div>

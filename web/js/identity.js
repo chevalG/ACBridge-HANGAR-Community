@@ -6,8 +6,10 @@
  * 身份键固定为 kind + resource_id，重复变体共用同一份档案。
  */
 import { escapeHtml } from './dom.js';
+import { t, applyDOM } from './i18n.js';
+import './strings-identity.js';
 
-const STATUS_LABEL = { known: '已确认', pending: '待确认' };
+const STATUS_LABEL = { known: 'identity.statusKnown', pending: 'identity.statusPending' };
 
 function ensureStyles() {
   if ([...document.querySelectorAll('link[rel="stylesheet"]')]
@@ -87,8 +89,8 @@ export class IdentityCatalog {
     if (!row) return '';
     const normalize = value => String(value || '').replace(/[·\s]/g, '').toLowerCase();
     const display = row.display_name || '';
-    if (display && normalize(display) !== normalize(asset.name)) return `身份: ${display}`;
-    if (!display || display === row.resource_id) return '身份: 待确认';
+    if (display && normalize(display) !== normalize(asset.name)) return t('identity.summaryLine', { name: display });
+    if (!display || display === row.resource_id) return t('identity.summaryPending');
     return '';
   }
 
@@ -132,6 +134,7 @@ export class IdentityEditor {
     card.dataset.identityKey = key;
     card.innerHTML = this._viewHtml(asset, row);
     panel.prepend(card);
+    applyDOM(card);
     this._bind(card, asset, row);
     if (this.editingKey === key) {
       card.open = true;
@@ -141,7 +144,7 @@ export class IdentityEditor {
 
   _viewHtml(asset, row) {
     const status = row?.status || 'pending';
-    const statusLabel = STATUS_LABEL[status] || '未同步';
+    const statusLabel = STATUS_LABEL[status] ? t(STATUS_LABEL[status]) : t('identity.statusUnsynced');
     const names = row?.names || {};
     const aliases = row?.aliases || [];
     const missions = row?.missions || [];
@@ -151,30 +154,37 @@ export class IdentityEditor {
     const overridden = row?.overridden_fields || [];
     const variants = Number(row?.variants) || 0;
     const source = row
-      ? `${row.in_collection ? '在当前馆藏中' : '不在当前馆藏（档案保留）'}${variants > 1 ? ` · ${variants} 个变体共用` : ''}`
-      : (this.catalog.error ? `身份目录不可用：${this.catalog.error}` : '尚未建立身份档案');
+      ? `${row.in_collection ? t('identity.inCollection') : t('identity.notInCollection')}${variants > 1 ? t('identity.variantsShared', { count: variants }) : ''}`
+      : (this.catalog.error ? t('identity.catalogError', { msg: this.catalog.error }) : t('identity.noProfile'));
+    const fieldSep = t('identity.listSep');
+    const pendingLine = pending.length
+      ? t('identity.pendingFields', { fields: escapeHtml(pending.join(fieldSep)) })
+      : t('identity.fieldsComplete');
+    const overriddenLine = overridden.length
+      ? t('identity.overriddenFields', { fields: escapeHtml(overridden.join(fieldSep)) })
+      : t('identity.noOverrides');
     const edit = this._editHtml(row);
     return `
       <summary class="identity-summary">
-        <span class="identity-title">馆藏身份</span>
+        <span class="identity-title" data-i18n="identity.title">${t('identity.title')}</span>
         <span class="identity-badge ${escapeHtml(status)}">${escapeHtml(statusLabel)}</span>
         <span class="identity-display" title="${escapeHtml(row?.display_name || asset.resource_id)}">${escapeHtml(row?.display_name || asset.resource_id)}</span>
       </summary>
       <div class="identity-body">
         <div class="identity-view">
           <div class="inspector-kv-grid">
-            <span class="inspector-key">中文名</span><span class="inspector-val">${escapeHtml(names.zh || '—')}</span>
-            <span class="inspector-key">英文名</span><span class="inspector-val">${escapeHtml(names.en || '—')}</span>
-            <span class="inspector-key">别名</span><span class="inspector-val identity-chips">${chipRow(aliases)}</span>
-            <span class="inspector-key">任务</span><span class="inspector-val identity-chips">${chipRow(missions)}</span>
-            <span class="inspector-key">标签</span><span class="inspector-val identity-chips">${chipRow(tags)}</span>
+            <span class="inspector-key" data-i18n="identity.nameZh">${t('identity.nameZh')}</span><span class="inspector-val">${escapeHtml(names.zh || '—')}</span>
+            <span class="inspector-key" data-i18n="identity.nameEn">${t('identity.nameEn')}</span><span class="inspector-val">${escapeHtml(names.en || '—')}</span>
+            <span class="inspector-key" data-i18n="identity.aliases">${t('identity.aliases')}</span><span class="inspector-val identity-chips">${chipRow(aliases)}</span>
+            <span class="inspector-key" data-i18n="identity.missions">${t('identity.missions')}</span><span class="inspector-val identity-chips">${chipRow(missions)}</span>
+            <span class="inspector-key" data-i18n="identity.tags">${t('identity.tags')}</span><span class="inspector-val identity-chips">${chipRow(tags)}</span>
           </div>
           ${row?.notes ? `<p class="identity-note">${escapeHtml(row.notes)}</p>` : ''}
           ${refs.length ? `<div class="identity-refs">${refs.map(ref => `<div>${escapeHtml(refText(ref))}</div>`).join('')}</div>` : ''}
-          <p class="form-hint">${escapeHtml(source)}${pending.length ? ` · 待补：${escapeHtml(pending.join('、'))}` : ' · 字段齐全'}${overridden.length ? ` · 用户覆盖：${escapeHtml(overridden.join('、'))}` : ' · 尚无用户覆盖'}</p>
+          <p class="form-hint">${escapeHtml(source)}${pendingLine}${overriddenLine}</p>
           <div class="identity-actions">
-            <button type="button" class="btn-mini" data-identity-edit>编辑身份</button>
-            <button type="button" class="btn-mini" data-identity-reset ${overridden.length ? '' : 'disabled'} title="${overridden.length ? '删除全部用户覆盖，恢复自动档案' : '当前没有用户覆盖'}">恢复自动档案</button>
+            <button type="button" class="btn-mini" data-identity-edit data-i18n="identity.edit">${t('identity.edit')}</button>
+            <button type="button" class="btn-mini" data-identity-reset ${overridden.length ? '' : 'disabled'} title="${overridden.length ? t('identity.resetTip') : t('identity.resetTipNone')}" data-i18n="identity.reset">${t('identity.reset')}</button>
           </div>
         </div>
         ${edit}
@@ -186,17 +196,17 @@ export class IdentityEditor {
     const refs = (row?.source_refs || []).map(ref => [ref.label,ref.path||ref.url||'',ref.note||''].join(' | ')).join('\n');
     return `
       <div class="identity-edit" hidden>
-        <p class="form-hint">用户覆盖优先于自动档案；留空保存即清除该字段。提交会带上当前修订号，若档案已被其他操作更新会提示刷新。</p>
-        <label class="identity-field"><span>中文名</span><input type="text" data-field="names.zh" maxlength="120" value="${escapeHtml(names.zh || '')}" spellcheck="false" /></label>
-        <label class="identity-field"><span>英文名</span><input type="text" data-field="names.en" maxlength="120" value="${escapeHtml(names.en || '')}" spellcheck="false" /></label>
-        <label class="identity-field"><span>别名（逗号分隔）</span><input type="text" data-field="aliases" value="${escapeHtml((row?.aliases || []).join(', '))}" spellcheck="false" /></label>
-        <label class="identity-field"><span>任务（每行一个）</span><textarea rows="2" data-field="missions">${escapeHtml((row?.missions || []).join('\n'))}</textarea></label>
-        <label class="identity-field"><span>标签（逗号分隔）</span><input type="text" data-field="tags" value="${escapeHtml((row?.tags || []).join(', '))}" spellcheck="false" /></label>
-        <label class="identity-field"><span>备注</span><textarea rows="3" data-field="notes">${escapeHtml(row?.notes || '')}</textarea></label>
-        <label class="identity-field"><span>来源引用（每行：标签 | 路径或URL | 备注）</span><textarea rows="2" data-field="source_refs" spellcheck="false">${escapeHtml(refs)}</textarea></label>
+        <p class="form-hint" data-i18n="identity.editHint">${t('identity.editHint')}</p>
+        <label class="identity-field"><span data-i18n="identity.nameZh">${t('identity.nameZh')}</span><input type="text" data-field="names.zh" maxlength="120" value="${escapeHtml(names.zh || '')}" spellcheck="false" /></label>
+        <label class="identity-field"><span data-i18n="identity.nameEn">${t('identity.nameEn')}</span><input type="text" data-field="names.en" maxlength="120" value="${escapeHtml(names.en || '')}" spellcheck="false" /></label>
+        <label class="identity-field"><span data-i18n="identity.aliasesField">${t('identity.aliasesField')}</span><input type="text" data-field="aliases" value="${escapeHtml((row?.aliases || []).join(', '))}" spellcheck="false" /></label>
+        <label class="identity-field"><span data-i18n="identity.missionsField">${t('identity.missionsField')}</span><textarea rows="2" data-field="missions">${escapeHtml((row?.missions || []).join('\n'))}</textarea></label>
+        <label class="identity-field"><span data-i18n="identity.tagsField">${t('identity.tagsField')}</span><input type="text" data-field="tags" value="${escapeHtml((row?.tags || []).join(', '))}" spellcheck="false" /></label>
+        <label class="identity-field"><span data-i18n="identity.notes">${t('identity.notes')}</span><textarea rows="3" data-field="notes">${escapeHtml(row?.notes || '')}</textarea></label>
+        <label class="identity-field"><span data-i18n="identity.sourceRefsField">${t('identity.sourceRefsField')}</span><textarea rows="2" data-field="source_refs" spellcheck="false">${escapeHtml(refs)}</textarea></label>
         <div class="identity-actions">
-          <button type="button" class="btn-mini identity-save" data-identity-save>保存身份</button>
-          <button type="button" class="btn-mini" data-identity-cancel>取消</button>
+          <button type="button" class="btn-mini identity-save" data-identity-save data-i18n="identity.save">${t('identity.save')}</button>
+          <button type="button" class="btn-mini" data-identity-cancel data-i18n="ui.common.cancel">${t('ui.common.cancel')}</button>
         </div>
       </div>`;
   }
@@ -245,17 +255,17 @@ export class IdentityEditor {
       const updated = await this.api.updateIdentity(asset.kind, asset.resource_id, payload);
       this.catalog.records.set(`${updated.kind}:${updated.resource_id}`, updated);
       this.editingKey = null;
-      this.notify('馆藏身份已保存；用户覆盖优先于自动档案。', 'success');
+      this.notify(t('identity.savedToast'), 'success');
       this.onChange();
       if (this.lastAsset && this.catalog.key(this.lastAsset) === this.catalog.key(asset)) this.render(this.lastPanel, asset);
     } catch (err) {
       if (err.code === 'identity_conflict') {
         await this.catalog.refresh().catch(() => {});
         this.editingKey = null;
-        this.notify('身份已被其他操作更新；已刷新为最新档案，请重新编辑。', 'info');
+        this.notify(t('identity.conflictToast'), 'info');
         if (this.lastAsset && this.catalog.key(this.lastAsset) === this.catalog.key(asset)) this.render(this.lastPanel, asset);
       } else {
-        this.notify(`保存馆藏身份失败：${err.message}`, 'error');
+        this.notify(t('identity.saveFailed', { msg: err.message }), 'error');
         if (button) button.disabled = false;
       }
     } finally {
@@ -265,18 +275,18 @@ export class IdentityEditor {
 
   async _reset(asset, row) {
     if (this.pending) return;
-    if (!window.confirm('恢复自动档案并删除这份资源的全部用户覆盖？')) return;
+    if (!window.confirm(t('identity.resetConfirm'))) return;
     this.pending = true;
     try {
       const updated = await this.api.updateIdentity(asset.kind, asset.resource_id,
         { reset: true, expected_revision: Number(row?.revision) || 0 });
       this.catalog.records.set(`${updated.kind}:${updated.resource_id}`, updated);
       this.editingKey = null;
-      this.notify('已恢复自动档案。', 'success');
+      this.notify(t('identity.resetDone'), 'success');
       this.onChange();
       if (this.lastAsset && this.catalog.key(this.lastAsset) === this.catalog.key(asset)) this.render(this.lastPanel, asset);
     } catch (err) {
-      this.notify(`恢复自动档案失败：${err.message}`, 'error');
+      this.notify(t('identity.resetFailed', { msg: err.message }), 'error');
     } finally {
       this.pending = false;
     }

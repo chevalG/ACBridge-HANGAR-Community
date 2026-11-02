@@ -16,6 +16,79 @@ from pathlib import Path
 
 from .errors import HangarError, NotFound
 from .util import (atomic_write_json, now_iso, read_json, sha256_file)
+from . import i18n
+
+i18n.register('engine', {
+    'zh-CN': {
+        'invalidGameRoot': '所选目录中未找到 AC6 游戏分卷（Data0.bhd / Data0.bdt）。',
+        'toolchainMissing': "缺少本地解包组件：{missing}。",
+        'overlapForbidden': '游戏目录与本地缓存目录不能重叠。',
+        'gamePreflight': '校验 AC6 游戏分卷只读快照与 Nuxe 索引…',
+        'cacheHit': '复用已校验的 AC6 本地展开缓存。',
+        'indexUnavailable': 'Nuxe 索引为空或不可读。',
+        'extracting': '正在通过 NuxeBridge 只读提取 {count} 个原版归档…',
+        'extractFailed': 'NuxeBridge 提取原版分卷失败。',
+        'unpacking': '正在通过 WitchyBND 解包 {count} 个容器…',
+        'unpackFailed': 'WitchyBND 解包失败 (exit={code})。',
+        'expandingRigs': '正在展开 {count} 个玩家部件骨骼包…',
+        'organizing': '正在整理展开资源目录与材质表…',
+        'readonlyViolation': '检测到原版游戏目录快照发生变化，已中止导入。',
+        'unavailable': '冻结的 ACBridge 引擎不可用，无法处理资源。',
+        'scanningParts': '正在扫描真实的 FLVER 部件文件…',
+        'scanningClips': '正在读取真实的 HKX 动画元数据…',
+        'noClips': '所选目录中没有发现 HKX 动画文件；仍可装配并导出绑定姿势。',
+        'mergingNames': '正在合并装备名称索引…',
+        'catalogReady': '资源索引已生成。',
+        'nameIndexUnavailable': '名称索引不可用；装备仍以技术 ID 显示。',
+        'reasonNoFlver': '未找到 FLVER 文件。',
+        'reasonAmbiguous': '多个不同内容的同名 FLVER 同时存在；请只保留一个资源根。',
+        'reasonNoSkeleton': '该部件包内没有 Skeleton.hkx；动态装配无法确认骨架。',
+        'partMissingSkeleton': '{name} 缺少 Skeleton.hkx，暂不可装配。',
+        'clipMissing': '扫描后 HKX 文件不再存在。',
+        'weaponNoteIndexed': '武器资源已编目；HANGAR 当前导出不包含武器动态挂载。',
+        'weaponNoteMissing': '未找到本地武器文件；武器动态挂载尚未接入导出管线。',
+        'weaponsNotExported': '武器名称已编目，但动态 GLB 导出暂不包含武器挂载。',
+        'exportSlotsOnly': '当前导出只包含 HD/BD/AM/LG 四槽。',
+        'metadataErrors': '{count} 个 HKX 的元数据无法解析，仍会出现在动画列表中供尝试。',
+        'skippedNonAnimation': '跳过 {count} 个不含动画的 HKX（例如 Skeleton.hkx）。',
+        'outputExists': '该任务的工作目录已存在；为避免覆盖证据，请重新发起任务。',
+    },
+    'en': {
+        'invalidGameRoot': 'No AC6 game archives (Data0.bhd / Data0.bdt) were found in the selected directory.',
+        'toolchainMissing': 'Missing local unpacking components: {missing}.',
+        'overlapForbidden': 'The game directory and the local cache directory must not overlap.',
+        'gamePreflight': 'Verifying the read-only AC6 archive snapshot and the Nuxe index...',
+        'cacheHit': 'Reusing the verified local AC6 extraction cache.',
+        'indexUnavailable': 'The Nuxe index is empty or unreadable.',
+        'extracting': 'Extracting {count} native archives read-only via NuxeBridge...',
+        'extractFailed': 'NuxeBridge failed to extract the native archives.',
+        'unpacking': 'Unpacking {count} containers via WitchyBND...',
+        'unpackFailed': 'WitchyBND unpacking failed (exit={code}).',
+        'expandingRigs': 'Expanding {count} player part rig packages...',
+        'organizing': 'Organizing the expanded resource directories and material tables...',
+        'readonlyViolation': 'The native game directory snapshot changed during import; import aborted.',
+        'unavailable': 'The frozen ACBridge engine is unavailable; resources cannot be processed.',
+        'scanningParts': 'Scanning the real FLVER part files...',
+        'scanningClips': 'Reading the real HKX motion metadata...',
+        'noClips': 'No HKX motion files were found in the selected directories; assembly and bind-pose export still work.',
+        'mergingNames': 'Merging the equipment name index...',
+        'catalogReady': 'The resource index is ready.',
+        'nameIndexUnavailable': 'The name index is unavailable; equipment falls back to technical IDs.',
+        'reasonNoFlver': 'No FLVER file was found.',
+        'reasonAmbiguous': 'Several same-named FLVER files with different content exist; keep a single resource root.',
+        'reasonNoSkeleton': 'This part package has no Skeleton.hkx; dynamic assembly cannot confirm the rig.',
+        'partMissingSkeleton': '{name} is missing Skeleton.hkx and cannot be assembled yet.',
+        'clipMissing': 'The HKX file no longer exists after scanning.',
+        'weaponNoteIndexed': 'Weapon resources are cataloged; HANGAR exports do not include weapon mounting yet.',
+        'weaponNoteMissing': 'No local weapon files were found; dynamic weapon mounting is not wired into the export pipeline yet.',
+        'weaponsNotExported': 'Weapon names are cataloged, but dynamic GLB export does not include weapon mounting yet.',
+        'exportSlotsOnly': 'The current export covers the HD/BD/AM/LG four slots only.',
+        'metadataErrors': '{count} HKX files had unparseable metadata; they still appear in the motion list to try.',
+        'skippedNonAnimation': 'Skipped {count} HKX files without motion data (for example Skeleton.hkx).',
+        'outputExists': "The job's working directory already exists; start a new job to avoid overwriting evidence.",
+    },
+})
+
 
 log = logging.getLogger('hangar.engine')
 
@@ -312,18 +385,18 @@ class Engine:
         game_dir = self.resolve_game_dir(raw_game_dir)
         if not game_dir:
             raise HangarError('invalid_game_root',
-                              '所选目录中未找到 AC6 游戏分卷（Data0.bhd / Data0.bdt）。',
+                              i18n.t('engine.invalidGameRoot'),
                               400, {'path': str(raw_game_dir)})
         toolchain = self.game_toolchain()
         if not toolchain['ready']:
             raise HangarError('game_mode_unavailable',
-                              f"缺少本地解包组件：{', '.join(toolchain['missing'])}。",
+                              i18n.t('engine.toolchainMissing', missing=', '.join(toolchain['missing'])),
                               400, {'toolchain': toolchain})
         out_root = (self.data_dir / 'game-extracted').resolve()
         if out_root == game_dir or game_dir in out_root.parents or out_root in game_dir.parents:
-            raise HangarError('invalid_game_root', '游戏目录与本地缓存目录不能重叠。', 400)
+            raise HangarError('invalid_game_root', i18n.t('engine.overlapForbidden'), 400)
 
-        notify(5, 'game-preflight', '校验 AC6 游戏分卷只读快照与 Nuxe 索引…')
+        notify(5, 'game-preflight', i18n.t('engine.gamePreflight'))
         before = self._game_snapshot(game_dir)
         manifest_path = out_root / 'extraction-manifest.json'
         existing = read_json(manifest_path, None)
@@ -336,7 +409,7 @@ class Engine:
                 and (out_root / 'dynamic-inputs' / 'chr').is_dir()
                 and (out_root / 'reference' / 'c0000' / 'Skeleton.hkx').is_file()
                 and (out_root / 'clips').is_dir()):
-            notify(25, 'game-cache-hit', '复用已校验的 AC6 本地展开缓存。')
+            notify(25, 'game-cache-hit', i18n.t('engine.cacheHit'))
             return str(out_root)
 
         res_dir = Path(toolchain['nuxe_res'])
@@ -349,7 +422,7 @@ class Engine:
                 if entry.startswith('/'):
                     catalog[entry] = idx_file.stem
         if not catalog:
-            raise HangarError('index_unavailable', 'Nuxe 索引为空或不可读。', 500)
+            raise HangarError('index_unavailable', i18n.t('engine.indexUnavailable'), 500)
 
         player_archives = sorted(
             p for p in catalog
@@ -390,7 +463,7 @@ class Engine:
             by_binder = {}
             for target in targets:
                 by_binder.setdefault(catalog[target] + '.bhd', []).append(target)
-            notify(10, 'game-extract', f'正在通过 NuxeBridge 只读提取 {len(targets)} 个原版归档…')
+            notify(10, 'game-extract', i18n.t('engine.extracting', count=len(targets)))
             for binder, bpaths in sorted(by_binder.items()):
                 for i in range(0, len(bpaths), 120):
                     chunk = bpaths[i:i + 120]
@@ -411,7 +484,7 @@ class Engine:
                     )
                     if proc.returncode != 0:
                         raise HangarError('game_extract_failed',
-                                          'NuxeBridge 提取原版分卷失败。', 500,
+                                          i18n.t('engine.extractFailed'), 500,
                                           {'binder': binder, 'stderr': (proc.stderr or proc.stdout or '')[-1200:]})
 
             def run_witchy(file_list, label, pct):
@@ -437,18 +510,18 @@ class Engine:
                         ).returncode
                     if code not in (0, -1, 4294967295):
                         raise HangarError('game_unpack_failed',
-                                          f'WitchyBND 解包失败 (exit={code})。', 500,
+                                          i18n.t('engine.unpackFailed', code=code), 500,
                                           {'batch': batch[:4]})
 
             dcx_files = sorted(stage_dir.rglob('*.dcx'))
-            run_witchy(dcx_files, f'正在通过 WitchyBND 解包 {len(dcx_files)} 个容器…', 16)
+            run_witchy(dcx_files, i18n.t('engine.unpacking', count=len(dcx_files)), 16)
             part_anibnds = sorted(
                 p for p in (stage_dir / 'parts').rglob('*.anibnd')
                 if PART_ID.match(p.stem)
             )
-            run_witchy(part_anibnds, f'正在展开 {len(part_anibnds)} 个玩家部件骨骼包…', 22)
+            run_witchy(part_anibnds, i18n.t('engine.expandingRigs', count=len(part_anibnds)), 22)
 
-            notify(26, 'game-organize', '正在整理展开资源目录与材质表…')
+            notify(26, 'game-organize', i18n.t('engine.organizing'))
             from .static_asset import reader
             from .materials import leaf
             load_flver = reader()
@@ -555,7 +628,7 @@ class Engine:
             after = self._game_snapshot(game_dir)
             if after != before:
                 raise HangarError('game_readonly_violation',
-                                  '检测到原版游戏目录快照发生变化，已中止导入。', 500)
+                                  i18n.t('engine.readonlyViolation'), 500)
             atomic_write_json(manifest_path, {
                 'schema_version': 1,
                 'game_dir': str(game_dir),
@@ -579,7 +652,7 @@ class Engine:
         info = self.probe()
         if not info['available']:
             raise HangarError('engine_unavailable',
-                              '冻结的 ACBridge 引擎不可用，无法处理资源。',
+                              i18n.t('engine.unavailable'),
                               503, {'engine': info})
         return info
 
@@ -600,7 +673,7 @@ class Engine:
         from acbridge.discovery import discover_assets, list_clips
         from acbridge.lookup import BridgeError
 
-        notify(8, 'scan-parts', '正在扫描真实的 FLVER 部件文件…')
+        notify(8, 'scan-parts', i18n.t('engine.scanningParts'))
         rows = []
         offset = 0
         limit = 500
@@ -617,7 +690,7 @@ class Engine:
             if offset > 20000:
                 break
 
-        notify(30, 'scan-clips', '正在读取真实的 HKX 动画元数据…')
+        notify(30, 'scan-clips', i18n.t('engine.scanningClips'))
         clip_dir = self.imports_dir / job_id / 'clips'
         if clip_dir.exists():
             # Every attempt gets a fresh child directory; this only protects
@@ -643,17 +716,16 @@ class Engine:
             clip_meta = {k: v for k, v in report.items() if k != 'clips'}
         except BridgeError as ex:
             if getattr(ex, 'code', '') == 'archive_contents_missing':
-                clip_error = ('no_clips',
-                              '所选目录中没有发现 HKX 动画文件；仍可装配并导出绑定姿势。')
+                clip_error = ('no_clips', i18n.t('engine.noClips'))
                 report, clips_raw, clip_meta = {}, [], {}
             else:
                 raise self._bridge_error(ex) from ex
 
-        notify(64, 'build-catalog', '正在合并装备名称索引…')
+        notify(64, 'build-catalog', i18n.t('engine.mergingNames'))
         catalog = self._build_catalog(roots, job_id, rows, clips_raw,
                                       clip_meta, clip_error)
         self.hash_cache.save()
-        notify(86, 'catalog-ready', '资源索引已生成。')
+        notify(86, 'catalog-ready', i18n.t('engine.catalogReady'))
         return catalog
 
     def _build_catalog(self, roots, job_id, discovered, clips_raw, clip_meta,
@@ -665,7 +737,7 @@ class Engine:
             names = merged_entries()[0]
         except Exception as ex:  # noqa: BLE001 - names are an enhancement
             names = []
-            warnings.append('名称索引不可用；装备仍以技术 ID 显示。')
+            warnings.append(i18n.t('engine.nameIndexUnavailable'))
             warning_details.append({'code': 'name_index_unavailable',
                                     'message': f'{type(ex).__name__}: {ex}'})
         part_names = {}
@@ -744,14 +816,14 @@ class Engine:
             name = entry.get('display_name') or str(row.get('id') or stem.upper())
             reason = None
             if not flver:
-                reason = '未找到 FLVER 文件。'
+                reason = i18n.t('engine.reasonNoFlver')
             elif ambiguous:
-                reason = '多个不同内容的同名 FLVER 同时存在；请只保留一个资源根。'
+                reason = i18n.t('engine.reasonAmbiguous')
             elif not skeleton:
-                reason = '该部件包内没有 Skeleton.hkx；动态装配无法确认骨架。'
+                reason = i18n.t('engine.reasonNoSkeleton')
             buildable = reason is None
             if not buildable and skeleton is None:
-                warnings.append(f'{name} 缺少 Skeleton.hkx，暂不可装配。')
+                warnings.append(i18n.t('engine.partMissingSkeleton', name=name))
             record = {
                 'id': str(row.get('id') or stem.upper()),
                 'slot': slot,
@@ -870,7 +942,7 @@ class Engine:
             }
             if not exists:
                 clip['error'] = clip['error'] or {
-                    'code': 'clip_missing', 'message': '扫描后 HKX 文件不再存在。'}
+                    'code': 'clip_missing', 'message': i18n.t('engine.clipMissing')}
                 clip['status'] = 'error'
             clips.append(clip)
 
@@ -894,7 +966,7 @@ class Engine:
                 'companion_stems': list(entry.get('companion_stems') or []),
                 'available': available, 'supported': False,
                 'source': 'local_file', 'sources': sources,
-                'note': '武器资源已编目；HANGAR 当前导出不包含武器动态挂载。',
+                'note': i18n.t('engine.weaponNoteIndexed'),
             })
         for stem, rec in weapon_names.items():
             if stem in seen_weapons:
@@ -909,13 +981,13 @@ class Engine:
                 'companion_stems': list(entry.get('companion_stems') or []),
                 'available': False, 'supported': False,
                 'source': 'name_index', 'sources': [],
-                'note': '未找到本地武器文件；武器动态挂载尚未接入导出管线。',
+                'note': i18n.t('engine.weaponNoteMissing'),
             })
         weapons.sort(key=lambda w: (w['name'].casefold(), w['resource_stem']))
         if weapons:
-            warnings.append('武器名称已编目，但动态 GLB 导出暂不包含武器挂载。')
+            warnings.append(i18n.t('engine.weaponsNotExported'))
             warning_details.append({'code': 'weapons_not_exported',
-                                    'message': '当前导出只包含 HD/BD/AM/LG 四槽。'})
+                                    'message': i18n.t('engine.exportSlotsOnly')})
 
         # --------------------------------------------------------- warnings
         if clip_error:
@@ -928,14 +1000,14 @@ class Engine:
             else:
                 warnings.append(str(warning))
         if clip_meta.get('metadata_errors'):
-            msg = f"{clip_meta['metadata_errors']} 个 HKX 的元数据无法解析，仍会出现在动画列表中供尝试。"
+            msg = i18n.t('engine.metadataErrors', count=clip_meta['metadata_errors'])
             warnings.append(msg)
             warning_details.append({'code': 'clip_metadata_errors',
                                     'message': msg,
                                     'count': clip_meta['metadata_errors']})
         skipped = clip_meta.get('non_animation_hkx') or []
         if skipped:
-            warnings.append(f'跳过 {len(skipped)} 个不含动画的 HKX（例如 Skeleton.hkx）。')
+            warnings.append(i18n.t('engine.skippedNonAnimation', count=len(skipped)))
 
         counts = {
             'parts': len(parts),
@@ -1042,7 +1114,7 @@ class Engine:
         out = self.job_output_dir(job_id)
         if out.exists():
             raise HangarError('output_exists',
-                              '该任务的工作目录已存在；为避免覆盖证据，请重新发起任务。',
+                              i18n.t('engine.outputExists'),
                               409, {'output': str(out)})
         return out
 

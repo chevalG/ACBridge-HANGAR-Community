@@ -1,5 +1,13 @@
 # Known limitations
 
+- Since 3.1.3 the interface is bilingual (English / Simplified Chinese), but
+  the experimental FXR research views (`fxr-*.js`, `source-*.js`) and the two
+  unlinked research dashboards (`h12-coverage.html`, `h23-motion-coverage.html`)
+  remain Chinese-only. They are hidden behind the experimental feature flag and
+  are not part of the supported public workflow.
+- Stored job history keeps the language it was produced in; switching the
+  interface language does not retroactively translate old messages. New jobs
+  follow the current language.
 - Normal builds hide unfinished FXR and laser-blade runtime controls. The
   experimental research code remains available only through an internal
   environment switch and is not part of the supported public workflow.

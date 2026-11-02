@@ -9,6 +9,8 @@ import { installSourceNormal } from './source-normals.js';
 import { installSourceLayers } from './source-layers.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { t } from './i18n.js';
+import './strings-viewer.js';
 
 export const RENDER_PRESETS = {
   studio: { name: '摄影棚', background: 0x343d48, exposure: 1.05, environment: 0.85,
@@ -176,7 +178,7 @@ export class HangarViewer {
    */
   async loadModel(url, { allowStatic = false, previewKind = null, sourceLayers = true } = {}) {
     if (!url) {
-      throw new Error('未提供有效的模型文件路径或 URL');
+      throw new Error(t('viewer.noModelUrl'));
     }
 
     // 1. 首先异步加载新模型；若解析抛错，捕获并直接向外抛出，不影响原有场景
@@ -188,7 +190,7 @@ export class HangarViewer {
     let skinned = false;
     let mesh = false;
     newModel.traverse(o => { if (o.isSkinnedMesh) skinned = true; if (o.isMesh) mesh = true; });
-    if (!skinned && (!allowStatic || !mesh)) { this._disposeObject(newModel, this.currentModel); throw new Error('模型缺少有效网格，已保留上一台机体。'); }
+    if (!skinned && (!allowStatic || !mesh)) { this._disposeObject(newModel, this.currentModel); throw new Error(t('viewer.noSkinnedMesh')); }
     newModel.traverse(o => { o.userData.hangarBind = {
       p: o.position.clone(), q: o.quaternion.clone(), s: o.scale.clone() }; });
 
@@ -746,7 +748,7 @@ export class HangarViewer {
    */
   captureScreenshot({ width = null, height = null, longEdge = 2560, transparent = false, helpers = false,
     download = true } = {}) {
-    if (!this.currentModel) throw new Error('请先预览模型，再保存照片。');
+    if (!this.currentModel) throw new Error(t('viewer.previewFirst'));
     const oldSize = this.renderer.getSize(new THREE.Vector2());
     if (width == null) {
       const aspect = oldSize.x / oldSize.y;
@@ -754,9 +756,9 @@ export class HangarViewer {
       height = Math.round(longEdge * Math.min(1, 1 / aspect));
     }
     width = Math.round(Number(width));
-    if (!Number.isFinite(width) || width < 256 || width > 4096) throw new Error('照片宽度应为 256–4096 像素。');
+    if (!Number.isFinite(width) || width < 256 || width > 4096) throw new Error(t('viewer.photoWidthRange'));
     height = height == null ? Math.round(width * oldSize.y / oldSize.x) : Math.round(Number(height));
-    if (!Number.isFinite(height) || height < 128 || height > 4096) throw new Error('照片高度应为 128–4096 像素。');
+    if (!Number.isFinite(height) || height < 128 || height > 4096) throw new Error(t('viewer.photoHeightRange'));
     const old = { ratio: this.renderer.getPixelRatio(), aspect: this.camera.aspect,
       background: this.scene.background, alpha: this.renderer.getClearAlpha(),
       grid: this.grid.visible, skeleton: this.skeletonHelper?.visible, floor: this.floor?.visible };
@@ -777,7 +779,7 @@ export class HangarViewer {
       }
       this.renderFrame();
       dataUrl = this.renderer.domElement.toDataURL('image/png');
-      if (!dataUrl.startsWith('data:image/png')) throw new Error('浏览器未能生成 PNG，请降低照片分辨率。');
+      if (!dataUrl.startsWith('data:image/png')) throw new Error(t('viewer.pngFailed'));
     } finally {
       this.renderer.setPixelRatio(old.ratio);
       this.renderer.setSize(oldSize.x, oldSize.y, false);

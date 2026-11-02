@@ -264,6 +264,16 @@ void ShowError(const std::wstring& message) {
     MessageBoxW(nullptr, message.c_str(), kAppTitle, MB_OK | MB_ICONERROR);
 }
 
+// The desktop shell speaks the Windows UI language: Chinese when the system
+// is zh, otherwise English. The web UI has its own in-app language choice.
+bool IsChineseShellUi() {
+    return PRIMARYLANGID(GetUserDefaultUILanguage()) == LANG_CHINESE;
+}
+
+const wchar_t* ShellMsg(const wchar_t* zh, const wchar_t* en) {
+    return IsChineseShellUi() ? zh : en;
+}
+
 void EnsureDirectory(const std::wstring& path);
 
 void LogDiagnostic(const std::wstring& message) {
@@ -313,8 +323,11 @@ bool StartOwnedService(const std::wstring& root, const std::wstring& data_dir,
     const std::wstring module = L"hangar";
     if (GetFileAttributesW(python.c_str()) == INVALID_FILE_ATTRIBUTES ||
         GetFileAttributesW(Join(root, L"hangar").c_str()) == INVALID_FILE_ATTRIBUTES) {
-        error = L"HANGAR 安装不完整：缺少 runtime/python.exe 或 hangar 模块。\n"
-                L"请完整解压 ZIP 后重试。";
+        error = ShellMsg(L"HANGAR 安装不完整：缺少 runtime/python.exe 或 hangar 模块。\n"
+                L"请完整解压 ZIP 后重试。",
+                L"The HANGAR installation is incomplete: runtime/python.exe or the "
+                L"hangar module is missing.\n"
+                L"Please extract the ZIP fully and try again.");
         return false;
     }
     EnsureDirectory(data_dir);
@@ -332,7 +345,7 @@ bool StartOwnedService(const std::wstring& root, const std::wstring& data_dir,
                              FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
                              OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (!log) {
-        error = L"无法创建服务日志：" + log_path;
+        error = ShellMsg(L"无法创建服务日志：", L"Could not create the service log: ") + log_path;
         return false;
     }
     // The service is started directly, so the launcher owns the actual
@@ -361,7 +374,8 @@ bool StartOwnedService(const std::wstring& root, const std::wstring& data_dir,
         CREATE_NO_WINDOW | CREATE_SUSPENDED, nullptr, root.c_str(), &startup, &info);
     CloseHandle(log);
     if (!started) {
-        error = L"无法启动 HANGAR 本地服务。\n错误代码：" +
+        error = ShellMsg(L"无法启动 HANGAR 本地服务。\n错误代码：",
+                         L"Could not start the HANGAR local service.\nError code: ") +
                 std::to_wstring(GetLastError());
         return false;
     }
@@ -391,9 +405,10 @@ bool StartOwnedService(const std::wstring& root, const std::wstring& data_dir,
         if (WaitForSingleObject(info.hProcess, 0) == WAIT_OBJECT_0) {
             DWORD code = 0;
             GetExitCodeProcess(info.hProcess, &code);
-            error = L"HANGAR 本地服务启动后立即退出。\n";
-            error += L"退出代码：" + std::to_wstring(code) + L"\n";
-            error += L"详细日志：" + Join(data_dir, L"server.log");
+            error = ShellMsg(L"HANGAR 本地服务启动后立即退出。\n",
+                             L"The HANGAR local service exited right after starting.\n");
+            error += ShellMsg(L"退出代码：", L"Exit code: ") + std::to_wstring(code) + L"\n";
+            error += ShellMsg(L"详细日志：", L"Detailed log: ") + Join(data_dir, L"server.log");
             return false;
         }
         HANDLE state_file = CreateFileW(state_path.c_str(), GENERIC_READ,
@@ -423,8 +438,9 @@ bool StartOwnedService(const std::wstring& root, const std::wstring& data_dir,
         }
         Sleep(50);
     }
-    error = L"HANGAR 本地服务未能在 45 秒内启动。\n";
-    error += L"详细日志：" + Join(data_dir, L"server.log");
+    error = ShellMsg(L"HANGAR 本地服务未能在 45 秒内启动。\n",
+                     L"The HANGAR local service did not start within 45 seconds.\n");
+    error += ShellMsg(L"详细日志：", L"Detailed log: ") + Join(data_dir, L"server.log");
     return false;
 }
 
@@ -555,7 +571,7 @@ void BeginClose() {
 }
 
 void ShowStartupFailure() {
-    g_state.startup_error += L"\n\n日志：" + Join(g_state.data_dir, L"server.log");
+    g_state.startup_error += ShellMsg(L"\n\n日志：", L"\n\nLog: ") + Join(g_state.data_dir, L"server.log");
     ShowError(g_state.startup_error);
     BeginClose();
 }
@@ -566,9 +582,12 @@ void OnWebViewCreated(HRESULT result, ICoreWebView2Controller* controller) {
     }
     if (FAILED(result) || !controller) {
         g_state.webview_failed = true;
-        g_state.startup_error = L"HANGAR 界面组件初始化失败。\n"
+        g_state.startup_error = ShellMsg(L"HANGAR 界面组件初始化失败。\n"
             L"请确认 Microsoft Edge WebView2 Runtime 已安装，然后重新启动。\n"
-            L"下载：https://go.microsoft.com/fwlink/p/?LinkId=2124703";
+            L"下载：https://go.microsoft.com/fwlink/p/?LinkId=2124703",
+            L"HANGAR failed to initialize its UI component.\n"
+            L"Please verify that the Microsoft Edge WebView2 Runtime is installed, then restart.\n"
+            L"Download: https://go.microsoft.com/fwlink/p/?LinkId=2124703");
         PostMessageW(g_state.hwnd, WM_APP + 3, 0, 0);
         return;
     }
@@ -576,7 +595,8 @@ void OnWebViewCreated(HRESULT result, ICoreWebView2Controller* controller) {
     g_controller->get_CoreWebView2(&g_webview);
     if (!g_webview) {
         g_state.webview_failed = true;
-        g_state.startup_error = L"HANGAR 界面控制器不可用。";
+        g_state.startup_error = ShellMsg(L"HANGAR 界面控制器不可用。",
+                                         L"The HANGAR UI controller is unavailable.");
         PostMessageW(g_state.hwnd, WM_APP + 3, 0, 0);
         return;
     }
@@ -602,9 +622,12 @@ void InitializeWebView() {
                 if (FAILED(env_result) || !environment) {
                     if (!g_state.shutting_down) {
                         g_state.webview_failed = true;
-                        g_state.startup_error = L"HANGAR 界面组件初始化失败。\n"
+                        g_state.startup_error = ShellMsg(L"HANGAR 界面组件初始化失败。\n"
                             L"请安装 Microsoft Edge WebView2 Runtime 后重试。\n"
-                            L"下载：https://go.microsoft.com/fwlink/p/?LinkId=2124703";
+                            L"下载：https://go.microsoft.com/fwlink/p/?LinkId=2124703",
+                            L"HANGAR failed to initialize its UI component.\n"
+                            L"Please install the Microsoft Edge WebView2 Runtime and retry.\n"
+                            L"Download: https://go.microsoft.com/fwlink/p/?LinkId=2124703");
                         PostMessageW(g_state.hwnd, WM_APP + 3, 0, 0);
                     }
                     return S_OK;
@@ -621,9 +644,12 @@ void InitializeWebView() {
             }).Get());
     if (FAILED(result)) {
         g_state.webview_failed = true;
-        g_state.startup_error = L"HANGAR 界面组件初始化失败。\n"
+        g_state.startup_error = ShellMsg(L"HANGAR 界面组件初始化失败。\n"
             L"请安装 Microsoft Edge WebView2 Runtime 后重试。\n"
-            L"下载：https://go.microsoft.com/fwlink/p/?LinkId=2124703";
+            L"下载：https://go.microsoft.com/fwlink/p/?LinkId=2124703",
+            L"HANGAR failed to initialize its UI component.\n"
+            L"Please install the Microsoft Edge WebView2 Runtime and retry.\n"
+            L"Download: https://go.microsoft.com/fwlink/p/?LinkId=2124703");
         PostMessageW(g_state.hwnd, WM_APP + 3, 0, 0);
     }
 }
@@ -631,7 +657,8 @@ void InitializeWebView() {
 void OnWindowCreated() {
     std::wstring local = KnownFolder(FOLDERID_LocalAppData);
     if (local.empty()) {
-        g_state.startup_error = L"无法读取 LOCALAPPDATA，HANGAR 不能创建用户数据目录。";
+        g_state.startup_error = ShellMsg(L"无法读取 LOCALAPPDATA，HANGAR 不能创建用户数据目录。",
+            L"Could not read LOCALAPPDATA; HANGAR cannot create the user data directory.");
         PostMessageW(g_state.hwnd, WM_APP + 3, 0, 0);
         return;
     }
@@ -727,7 +754,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
 
     g_state.single_instance = CreateMutexW(nullptr, TRUE, kMutexName);
     if (!g_state.single_instance) {
-        ShowError(L"无法创建 HANGAR 单实例锁。");
+        ShowError(ShellMsg(L"无法创建 HANGAR 单实例锁。",
+                           L"Could not create the HANGAR single-instance lock."));
         return 2;
     }
     const bool already_running = WaitForSingleObject(g_state.single_instance, 0) != WAIT_OBJECT_0;
@@ -752,7 +780,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     window_class.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     window_class.hbrBackground = CreateSolidBrush(RGB(12, 17, 23));
     if (!RegisterClassExW(&window_class)) {
-        ShowError(L"无法注册 HANGAR 窗口类。");
+        ShowError(ShellMsg(L"无法注册 HANGAR 窗口类。",
+                           L"Could not register the HANGAR window class."));
         return 2;
     }
 
@@ -781,7 +810,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
         CW_USEDEFAULT, CW_USEDEFAULT, 1600, 1000,
         nullptr, nullptr, instance, nullptr);
     if (!hwnd) {
-        ShowError(L"无法创建 HANGAR 主窗口。");
+        ShowError(ShellMsg(L"无法创建 HANGAR 主窗口。",
+                           L"Could not create the HANGAR main window."));
         return 2;
     }
     if (no_window) {
@@ -811,8 +841,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
         if (g_state.service_started && !IsOwnedServiceAlive() && !g_state.shutting_down) {
             // The service died unexpectedly. Keep the window open only long
             // enough to show the actionable failure, then clean up.
-            g_state.startup_error = L"HANGAR 本地服务意外退出。\n"
-                L"请重新启动 HANGAR；日志位于 data\\server.log。";
+            g_state.startup_error = ShellMsg(L"HANGAR 本地服务意外退出。\n"
+                L"请重新启动 HANGAR；日志位于 data\\server.log。",
+                L"The HANGAR local service exited unexpectedly.\n"
+                L"Please restart HANGAR; the log is at data\\server.log.");
             PostMessageW(hwnd, WM_APP + 3, 0, 0);
         }
     }

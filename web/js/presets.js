@@ -7,12 +7,14 @@ import { api } from './api.js';
 import { StorageManager } from './storage.js';
 import { BUILTIN_PRESETS } from './catalog-data.js';
 import { escapeHtml } from './dom.js';
+import { t, applyDOM } from './i18n.js';
+import './strings-presets.js';
 
 export class PresetManager {
   constructor(modalId, options = {}) {
     this.modal = document.getElementById(modalId);
     if (!this.modal) {
-      throw new Error(`找不到预设模态框 #${modalId}`);
+      throw new Error(t('presets.modalNotFound', { id: modalId }));
     }
 
     this.presets = [...BUILTIN_PRESETS];
@@ -34,32 +36,33 @@ export class PresetManager {
               <polyline points="17 21 17 13 7 13 7 21"></polyline>
               <polyline points="7 3 7 8 15 8"></polyline>
             </svg>
-            机体装配预设方案
+            <span data-i18n="presets.title">${t('presets.title')}</span>
           </span>
           <button class="modal-close-btn" data-action="close">&times;</button>
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label class="form-label">保存当前装配为新预设</label>
+            <label class="form-label" data-i18n="presets.saveLabel">${t('presets.saveLabel')}</label>
             <div class="input-with-button">
-              <input type="text" id="input-new-preset-name" placeholder="输入预设名称 (例如：标准轻量高机动型)..." />
-              <button id="btn-save-current-preset" class="btn-primary">保存预设</button>
+              <input type="text" id="input-new-preset-name" placeholder="${t('presets.namePlaceholder')}" data-i18n-placeholder="presets.namePlaceholder" />
+              <button id="btn-save-current-preset" class="btn-primary" data-i18n="presets.save">${t('presets.save')}</button>
             </div>
-            <span class="form-hint">记录当前四槽部件 (HD/BD/AM/LG) 及所选动画配置</span>
+            <span class="form-hint" data-i18n="presets.saveHint">${t('presets.saveHint')}</span>
           </div>
 
           <div class="form-group" style="margin-top: 10px;">
-            <label class="form-label">可用预设库 (含系统内置与用户自定义)</label>
+            <label class="form-label" data-i18n="presets.libraryLabel">${t('presets.libraryLabel')}</label>
             <div id="presets-list-wrap" class="preset-list">
               <!-- 动态填充预设条目 -->
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="modal-close-btn-secondary" data-action="close">关闭</button>
+          <button class="modal-close-btn-secondary" data-action="close" data-i18n="presets.close">${t('presets.close')}</button>
         </div>
       </div>
     `;
+    applyDOM(this.modal);
   }
 
   _bindEvents() {
@@ -84,12 +87,12 @@ export class PresetManager {
     btnSave.addEventListener('click', async () => {
       const name = inputName.value.trim();
       if (!name) {
-        alert('请输入预设方案名称');
+        alert(t('presets.nameRequired'));
         return;
       }
 
       if (!this.getCurrentConfig) {
-        alert('无法获取当前装配配置');
+        alert(t('presets.configUnavailable'));
         return;
       }
 
@@ -103,12 +106,12 @@ export class PresetManager {
       btnSave.disabled = true;
       inputName.disabled = true;
       try {
-        if (!api.isConnected) throw new Error('本地服务未连接，配置尚未保存。');
+        if (!api.isConnected) throw new Error(t('presets.saveDisconnected'));
         const res = await api.createPreset(name, config);
-        if (!res?.id) throw new Error('保存未返回配置标识。');
+        if (!res?.id) throw new Error(t('presets.saveNoId'));
         presetData.id = res.id;
       } catch (err) {
-        alert(`保存失败：${err.message}`);
+        alert(t('presets.saveFailed', { msg: err.message }));
         return;
       } finally {
         btnSave.disabled = false;
@@ -168,8 +171,8 @@ export class PresetManager {
 
     if (this.presets.length === 0) {
       listWrap.innerHTML = `
-        <div style="text-align: center; color: var(--text-muted); padding: 24px; font-size: 12px;">
-          暂无预设方案
+        <div style="text-align: center; color: var(--text-muted); padding: 24px; font-size: 12px;" data-i18n="presets.empty">
+          ${t('presets.empty')}
         </div>
       `;
       return;
@@ -185,20 +188,20 @@ export class PresetManager {
           <div style="flex: 1; min-width: 0;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span class="preset-name">${escapeHtml(p.name)}</span>
-              ${isBuiltin ? '<span class="brand-badge" style="font-size: 9px;">内置参考</span>' : ''}
+              ${isBuiltin ? `<span class="brand-badge" style="font-size: 9px;" data-i18n="presets.builtinBadge">${t('presets.builtinBadge')}</span>` : ''}
             </div>
             <div class="preset-details" title="${partsStr}">${partsStr}</div>
           </div>
           <div style="display: flex; gap: 6px; align-items: center;">
-            <button class="btn-cyan btn-apply" data-action="apply">装配此方案</button>
+            <button class="btn-cyan btn-apply" data-action="apply" data-i18n="presets.apply">${t('presets.apply')}</button>
             ${!isBuiltin ? `
-              <button class="btn-icon btn-rename" data-action="rename" title="重命名">
+              <button class="btn-icon btn-rename" data-action="rename" title="${t('presets.renameTip')}" data-i18n-title="presets.renameTip">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                 </svg>
               </button>
-              <button class="btn-icon btn-delete" data-action="delete" title="删除预设" style="color: var(--accent-crimson);">
+              <button class="btn-icon btn-delete" data-action="delete" title="${t('presets.deleteTip')}" data-i18n-title="presets.deleteTip" style="color: var(--accent-crimson);">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -225,14 +228,14 @@ export class PresetManager {
 
       // 重命名
       item.querySelector('[data-action="rename"]')?.addEventListener('click', async () => {
-        const newName = prompt('请输入新预设名称:', preset.name);
+        const newName = prompt(t('presets.renamePrompt'), preset.name);
         if (newName && newName.trim() && newName.trim() !== preset.name) {
           try {
-            if (!api.isConnected) throw new Error('本地服务未连接。');
+            if (!api.isConnected) throw new Error(t('presets.disconnected'));
             await api.updatePreset(id, { name: newName.trim(), config: preset.config });
             preset.name = newName.trim();
           } catch (e) {
-            alert(`重命名失败：${e.message}`); return;
+            alert(t('presets.renameFailed', { msg: e.message })); return;
           }
           StorageManager.saveLocalPreset(preset);
           this.renderPresetsList();
@@ -241,12 +244,12 @@ export class PresetManager {
 
       // 删除
       item.querySelector('[data-action="delete"]')?.addEventListener('click', async () => {
-        if (confirm(`确定要删除预设 "${preset.name}" 吗？`)) {
+        if (confirm(t('presets.deleteConfirm', { name: preset.name }))) {
           try {
-            if (!api.isConnected) throw new Error('本地服务未连接。');
+            if (!api.isConnected) throw new Error(t('presets.disconnected'));
             await api.deletePreset(id);
           } catch (e) {
-            alert(`删除失败：${e.message}`); return;
+            alert(t('presets.deleteFailed', { msg: e.message })); return;
           }
           StorageManager.deleteLocalPreset(id);
           this.presets = this.presets.filter(p => p.id !== id);

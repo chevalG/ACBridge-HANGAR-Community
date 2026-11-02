@@ -13,6 +13,7 @@ import threading
 import time
 from pathlib import Path
 
+from . import i18n
 from .errors import Conflict, HangarError, NotFound
 from .glb import read_glb_evidence
 from .util import atomic_write_json, now_iso, read_json, safe_filename, sha256_file, unique_path
@@ -20,6 +21,149 @@ from .cache_policy import is_reparse_or_link
 from .engine import INTERNAL_ARTIFACT_DIRS
 
 log = logging.getLogger('hangar.library')
+
+i18n.register('lib', {
+    'zh-CN': {
+        'defaultWeaponPresetName': '我的武器组合',
+        'dynamicRootsRequired': '请选择已展开的原版 HKX 动画目录。',
+        'replaceRootsBool': 'replace_roots 必须是布尔值。',
+        'dynamicScanStage': '关联原版骨架、类型表与动作片段…',
+        'dynamicScanFailed': '动作索引未生成有效结果。',
+        'dynamicScanDone': '原版动作目录已关联；预览时检查完整解码与实际模型骨架。',
+        'motionModeRequired': '请选择自由预览或严格验证。',
+        'nativeMotionMissing': '尚未关联此模型自己的原版动作目录。',
+        'nativeSkeletonMissing': '缺少此模型的原版骨架。',
+        'nativeClipMissing': '请选择已发现的真实动作片段。',
+        'dynamicComponentsUnsupported': '此模型的附属部件没有完整的源骨架映射；仍可使用静态组合预览，未尝试猜测绑定。',
+        'dynamicSourceChanged': '动作、骨架或模型原件已变化，请重新索引。',
+        'nativeSourceUnresolved': '此动作的源骨架或类型表尚未可靠解析；当前模型和动作保留。',
+        'nativeDecodeStage': '解码原版 HKX，检查实际模型的每个正权重骨骼…',
+        'availabilityApprox': '使用逐帧来源归因的安全旋转投影；原版视觉与运行时一致性未验证。',
+        'availabilityPlayable': '技术转换和GLB校验通过；视觉正确性与原版一致性尚未认证。',
+        'assetNotFound': '馆藏资源不存在，请重新导入目录。',
+        'libraryBusy': '已有同类资源任务，请等待完成或取消。',
+        'jobCancelled': '资源任务已取消，原有场景与目录保留。',
+        'flverRootsRequired': '请选择包含 FLVER 的展开资源目录。',
+        'tooManyModels': '超过 20,000 个模型，请选择更具体的资源目录。',
+        'scanProgress': '已索引 {count} 个真实模型…',
+        'noModelsFound': '目录内未找到玩家部件、WP 武器或 cXXXX 敌方 FLVER。原有目录已保留。',
+        'scanDone': '馆藏已就绪：{count} 个真实模型。',
+        'sourceChanged': '原始模型已变化或不存在，请重新索引。',
+        'componentChanged': '关联部件已变化，请重新导入资源目录。',
+        'convertStage': '正在转换源模型与刚性骨骼…',
+        'validateStage': '校验生成的 GLB…',
+        'warnStaticPose': '静态源姿态；已关联原版纹理随 GLB 保留，着色器/图层仍含近似，原游戏视觉与动态外观 not_verified。',
+        'warnMissingComponents': '当前仅显示主体，缺少关联部件：{ids}。请导入这些原始部件所在的 expanded 目录。',
+        'warnDynamicBinding': '真实 HKX / 同角色骨架绑定；动作语义 UNKNOWN，不含行为图、IK、物理与 FX。原游戏动态外观 not_verified。',
+        'warnSplineProjection': '实验性样条旋转投影：单位旋转为经数值归因后的预览转换，不保证 AC6 原版消费一致；严格解码仍保持拒绝。',
+        'warnMountExperimental': '包含实验性装配：候选 Dummy 与手动偏移，仅供自由组合，不保证原版一致。',
+        'warnMountTechnical': '参数与 Dummy 挂点技术验证。',
+        'warnMountFold': '保留机体动画；武器收折 UNKNOWN，动态外观 not_verified。',
+        'previewDone': '模型已转换并通过 GLB 校验。',
+        'conversionTimeout': '模型转换超时；已停止子进程，原有场景保留。',
+        'stageNativeSkeleton': '检查动作源骨架…',
+        'stageNativeGeometry': '准备实际模型蒙皮…',
+        'stageNativeDecode': '解码原始动作…',
+        'stageNativeRotationSafety': '检查安全旋转处理…',
+        'stageNativeSkinBounds': '计算逐帧蒙皮与取景范围…',
+        'stageNativeWrite': '生成动态GLB…',
+        'stageNativeProcessing': '正在处理动作…',
+        'nativeAnimationFailed': '此动作暂时无法可靠加载。{reason} 已保留当前模型、动作和导出目标。',
+        'mountAnchorUnavailable': '当前机体缺少所选候选挂点、对应骨骼或有效变换；请选择其他候选或更换机体。',
+        'conversionFailed': '该资源的转换或验证失败，原有场景保留。',
+        'exportNotReady': '请先成功预览要导出的资源。',
+        'artifactChanged': '模型缓存已变化，请重新预览后导出。',
+        'exportMismatch': '导出文件校验失败。',
+        'exportDone': 'GLB 已保存。',
+        'bodyNotReady': '请先在整备工位装配一台有效机体。',
+        'mountSelectionInvalid': '请选择真实武器、四个装配槽之一与有效装配模式。',
+        'adjustmentObjectRequired': '调整参数需为 XYZ 位置与旋转对象。',
+        'adjustmentRange': '位置需为 ±100 米内 XYZ，角度为 ±360 度内 XYZ 有限数值。',
+        'mountNotVerified': '此槽位或手动调整没有原版依据；请选择实验性装配。',
+        'anchorExperimentalOnly': '自选候选挂点只适用于实验性装配。',
+        'anchorSlotMismatch': '该候选挂点不属于所选槽位；请选择列出的手掌、前臂或肩部锚点。',
+        'mountFrameMissing': '机体缓存缺少几何坐标信息，请重新构建机体后再试。',
+        'assemblyEmpty': '该组合没有有效武器配置，请重新保存。',
+        'assemblyInvalid': '组合中的武器配置无效，请重新保存。',
+        'assemblyNotReady': '请先完成一套武器装配再保存。',
+        'presetNotFound': '武器组合不存在。',
+        'assemblyBodyMismatch': '此组合的机体部件已不同，请先恢复保存时的四槽机体。',
+        'mountCacheChanged': '机体缓存或武器输入已变化，请重新生成。',
+        'mountStage': '按参数与原始 Dummy 构建跟随挂点…',
+        'weaponSourceChanged': '已选武器资源已变化，请重新导入。',
+        'bodyPartOffline': '机体原始部件离线，请重新导入。',
+    },
+    'en': {
+        'defaultWeaponPresetName': 'My weapon set',
+        'dynamicRootsRequired': 'Select expanded vanilla HKX animation directories.',
+        'replaceRootsBool': 'replace_roots must be a boolean.',
+        'dynamicScanStage': 'Linking vanilla skeletons, type tables and motion clips...',
+        'dynamicScanFailed': 'The motion index did not produce a valid result.',
+        'dynamicScanDone': 'Vanilla motion catalog linked; full decoding and the actual model skeleton are checked at preview time.',
+        'motionModeRequired': 'Choose free preview or strict validation.',
+        'nativeMotionMissing': 'This model has no vanilla motion catalog linked yet.',
+        'nativeSkeletonMissing': 'The vanilla skeleton for this model is missing.',
+        'nativeClipMissing': 'Choose a real motion clip that has been discovered.',
+        'dynamicComponentsUnsupported': "This model's attached components lack a complete source-skeleton mapping; static assembly preview still works, and binding was not guessed.",
+        'dynamicSourceChanged': 'The motion, skeleton or model source has changed; re-index it.',
+        'nativeSourceUnresolved': "This clip's source skeleton or type table is not reliably resolved; the current model and motion are kept.",
+        'nativeDecodeStage': 'Decoding vanilla HKX and checking every positive-weight bone of the actual model...',
+        'availabilityApprox': 'Safe rotation projection with per-frame source attribution; vanilla visuals and runtime parity are unverified.',
+        'availabilityPlayable': 'Technical conversion and GLB validation passed; visual correctness and vanilla parity are not yet certified.',
+        'assetNotFound': 'The library asset does not exist; re-import the directories.',
+        'libraryBusy': 'A job of this kind is already running; wait for it to finish or cancel it.',
+        'jobCancelled': 'The asset job was cancelled; the existing scene and catalog are kept.',
+        'flverRootsRequired': 'Select expanded asset directories that contain FLVER files.',
+        'tooManyModels': 'More than 20,000 models; choose more specific asset directories.',
+        'scanProgress': 'Indexed {count} real models...',
+        'noModelsFound': 'No player parts, WP weapons or cXXXX enemy FLVER found in the directories. The existing catalog is kept.',
+        'scanDone': 'Library ready: {count} real models.',
+        'sourceChanged': 'The original model changed or no longer exists; re-index it.',
+        'componentChanged': 'An attached component changed; re-import the asset directories.',
+        'convertStage': 'Converting the source model and rigid bones...',
+        'validateStage': 'Validating the generated GLB...',
+        'warnStaticPose': 'Static source pose; linked vanilla textures are kept in the GLB, shaders/layers remain approximate, and the original game look and dynamic appearance are not_verified.',
+        'warnMissingComponents': 'Only the body is shown; missing attached components: {ids}. Import the expanded directories that contain these original parts.',
+        'warnDynamicBinding': 'Real HKX bound to the same-character skeleton; motion semantics UNKNOWN, with no behavior graph, IK, physics or FX. Original game dynamic appearance not_verified.',
+        'warnSplineProjection': 'Experimental spline rotation projection: unit rotations are preview conversions after numeric attribution; parity with AC6 vanilla consumption is not guaranteed and strict decoding still refuses.',
+        'warnMountExperimental': 'Contains experimental assembly: candidate Dummies and manual offsets, for free combination only; vanilla parity is not guaranteed.',
+        'warnMountTechnical': 'Parameter and Dummy anchor technical verification.',
+        'warnMountFold': 'Body animation is kept; weapon folding UNKNOWN, dynamic appearance not_verified.',
+        'previewDone': 'The model was converted and passed GLB validation.',
+        'conversionTimeout': 'Model conversion timed out; the child process was stopped and the existing scene is kept.',
+        'stageNativeSkeleton': 'Checking motion source skeletons...',
+        'stageNativeGeometry': 'Preparing actual model skinning...',
+        'stageNativeDecode': 'Decoding original motions...',
+        'stageNativeRotationSafety': 'Checking safe rotation handling...',
+        'stageNativeSkinBounds': 'Computing per-frame skinning and framing bounds...',
+        'stageNativeWrite': 'Generating the dynamic GLB...',
+        'stageNativeProcessing': 'Processing motions...',
+        'nativeAnimationFailed': 'This motion cannot be loaded reliably right now. {reason} The current model, motion and export target are kept.',
+        'mountAnchorUnavailable': 'The current body lacks the selected candidate anchor, its bone or a valid transform; pick another candidate or a different body.',
+        'conversionFailed': 'Conversion or validation of this asset failed; the existing scene is kept.',
+        'exportNotReady': 'Preview the asset to export successfully first.',
+        'artifactChanged': 'The model cache changed; preview again before exporting.',
+        'exportMismatch': 'Exported file verification failed.',
+        'exportDone': 'GLB saved.',
+        'bodyNotReady': 'Assemble a valid mech at the assembly station first.',
+        'mountSelectionInvalid': 'Select a real weapon, one of the four assembly slots and a valid mount mode.',
+        'adjustmentObjectRequired': 'Adjustment must be an object with XYZ translation and rotation.',
+        'adjustmentRange': 'Translation must be XYZ within ±100 m and rotation XYZ finite values within ±360 degrees.',
+        'mountNotVerified': 'This slot or manual adjustment has no vanilla basis; choose experimental assembly.',
+        'anchorExperimentalOnly': 'Custom candidate anchors only apply to experimental assembly.',
+        'anchorSlotMismatch': 'That candidate anchor does not belong to the selected slot; choose a listed palm, forearm or shoulder anchor.',
+        'mountFrameMissing': 'The body cache lacks geometry frame data; rebuild the body and try again.',
+        'assemblyEmpty': 'This preset has no valid weapon configuration; save it again.',
+        'assemblyInvalid': 'A weapon configuration in the preset is invalid; save it again.',
+        'assemblyNotReady': 'Complete a weapon assembly first before saving.',
+        'presetNotFound': 'The weapon preset does not exist.',
+        'assemblyBodyMismatch': 'The body parts of this preset have changed; restore the four-slot body from when it was saved.',
+        'mountCacheChanged': 'The body cache or weapon inputs changed; regenerate them.',
+        'mountStage': 'Building follow anchors from parameters and original Dummies...',
+        'weaponSourceChanged': 'The selected weapon asset changed; re-import it.',
+        'bodyPartOffline': "The body's original part is offline; re-import it.",
+    },
+})
 
 PART = re.compile(r'^(hd|bd|am|lg)_[a-z]_\d+$',re.I)
 WEAPON = re.compile(r'^wp_[a-z]_\d+(?:_\d+)?$',re.I)
@@ -85,9 +229,12 @@ class AssetLibrary:
                 stamps.append((stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns))
             except OSError:
                 stamps.append(None)
+        # Capability rows and playability reasons are localized, so the active
+        # UI language is itself a source of UI facts for this cache.
         return (tuple(stamps), json.dumps([self.data, catalog], sort_keys=True),
                 getattr(getattr(self, 'motion_cache', None), 'revision', 0),
-                tuple(sorted(processing_code().items())))
+                tuple(sorted(processing_code().items())),
+                i18n.current_lang())
 
     def _make_snapshot(self, catalog):
         catalog={p.get('resource_stem','').upper():p for p in catalog.get('parts',[])}
@@ -143,10 +290,10 @@ class AssetLibrary:
     def scan_dynamics(self,payload):
         roots=self.app._validate_roots(payload.get('roots'), max_roots=16)
         if not roots:
-            raise HangarError('invalid_roots','请选择已展开的原版 HKX 动画目录。')
+            raise HangarError('invalid_roots',i18n.t('lib.dynamicRootsRequired'))
         replace=payload.get('replace_roots',False)
         if type(replace) is not bool:
-            raise HangarError('invalid_roots','replace_roots 必须是布尔值。')
+            raise HangarError('invalid_roots',i18n.t('lib.replaceRootsBool'))
         if not replace:
             roots=self.app._validate_roots(list(dict.fromkeys(read_json(self.dynamic_path,{}).get('roots',[])+roots)), max_roots=16)
         def run(jid):
@@ -154,13 +301,13 @@ class AssetLibrary:
             out.mkdir(parents=True,exist_ok=True)
             request=out/'scan-request.json'
             atomic_write_json(request,{'roots':roots,'output':str(out/'dynamic-catalog.json')})
-            self.app.jobs.update(jid,stage='scan-hkx',progress=15,message='关联原版骨架、类型表与动作片段…')
+            self.app.jobs.update(jid,stage='scan-hkx',progress=15,message=i18n.t('lib.dynamicScanStage'))
             self._process(jid,[sys.executable,'-B','-m','hangar.dynamic_catalog',str(request)],out/'scan.log')
             if jid and self.cancelled(jid):
                 return
             result=read_json(out/'dynamic-catalog.json',{})
             if result.get('schema')!='h08-dynamic-catalog-1':
-                raise HangarError('dynamic_scan_failed','动作索引未生成有效结果。')
+                raise HangarError('dynamic_scan_failed',i18n.t('lib.dynamicScanFailed'))
             with self.lock,self.app._lock,self.app.jobs._lock:
                 if jid and self.cancelled(jid):
                     return
@@ -170,7 +317,7 @@ class AssetLibrary:
             if jid:
                 self._complete(jid,result={'assets':len(result['assets']),
                     'clips':sum(len(a['clips']) for a in result['assets'].values()),'issues':result['issues']},
-                    message='原版动作目录已关联；预览时检查完整解码与实际模型骨架。')
+                    message=i18n.t('lib.dynamicScanDone'))
         return self._create('library-dynamic-scan',{'roots':roots},run)
 
     def animate(self,payload):
@@ -179,20 +326,20 @@ class AssetLibrary:
         try:
             mode=requested_mode(payload)
         except ValueError as error:
-            raise HangarError('invalid_motion_mode','请选择自由预览或严格验证。') from error
+            raise HangarError('invalid_motion_mode',i18n.t('lib.motionModeRequired')) from error
         inventory=read_json(self.dynamic_path,{}).get('assets',{}).get(asset['resource_id'])
         if not inventory:
-            raise HangarError('native_motion_missing','尚未关联此模型自己的原版动作目录。')
+            raise HangarError('native_motion_missing',i18n.t('lib.nativeMotionMissing'))
         if inventory.get('discovery_error') or not inventory.get('skeleton'):
-            raise HangarError('native_skeleton_unresolved',inventory.get('discovery_error') or '缺少此模型的原版骨架。')
+            raise HangarError('native_skeleton_unresolved',inventory.get('discovery_error') or i18n.t('lib.nativeSkeletonMissing'))
         clip=next((c for c in inventory['clips'] if c['id']==payload.get('clip_id')),None)
         if not clip:
-            raise HangarError('native_clip_missing','请选择已发现的真实动作片段。')
+            raise HangarError('native_clip_missing',i18n.t('lib.nativeClipMissing'))
         if asset.get('components') and not all(
                 c.get('source') and c.get('bone_prefix') and c.get('reference') is not None
                 for c in asset['components']):
             raise HangarError('dynamic_components_unsupported',
-                '此模型的附属部件没有完整的源骨架映射；仍可使用静态组合预览，未尝试猜测绑定。')
+                i18n.t('lib.dynamicComponentsUnsupported'))
         from .materials import material_signature
         material_request=self._material_request()
         component_sources=[c['source'] for c in asset.get('components',[]) if c.get('source')]
@@ -216,7 +363,7 @@ class AssetLibrary:
             cache_key=hashlib.sha256((cache_key+json.dumps(semantic,sort_keys=True)).encode()).hexdigest()
         for path,expected in dependencies.items():
             if not Path(path).is_file() or sha256_file(path)!=expected:
-                raise HangarError('dynamic_source_changed','动作、骨架或模型原件已变化，请重新索引。')
+                raise HangarError('dynamic_source_changed',i18n.t('lib.dynamicSourceChanged'))
         cached=self.motion_cache.completed_job(self.app,self.motion_cache.get(cache_key),mode)
         if cached:
             self.app._last_viewed_job=cached['id']
@@ -232,9 +379,9 @@ class AssetLibrary:
         def convert(jid):
             for path,expected in dependencies.items():
                 if not Path(path).is_file() or sha256_file(path)!=expected:
-                    raise HangarError('dynamic_source_changed','动作、骨架或模型原件已变化，请重新索引。')
+                    raise HangarError('dynamic_source_changed',i18n.t('lib.dynamicSourceChanged'))
             if clip.get('discovery_error') or not clip.get('compendium'):
-                raise HangarError('native_source_unresolved','此动作的源骨架或类型表尚未可靠解析；当前模型和动作保留。',
+                raise HangarError('native_source_unresolved',i18n.t('lib.nativeSourceUnresolved'),
                                   details={'reason':clip.get('discovery_error') or 'missing compendium'})
             out=self.app.engine.job_output_dir(jid)
             out.mkdir(parents=True,exist_ok=True)
@@ -247,7 +394,7 @@ class AssetLibrary:
                 'semantic_proof':semantic,'state_labels':clip.get('state_labels',[]),
                 'motion_mode':mode,
                 'expected_sources':dependencies,**material_request})
-            self.app.jobs.update(jid,stage='native-hkx',progress=15,message='解码原版 HKX，检查实际模型的每个正权重骨骼…')
+            self.app.jobs.update(jid,stage='native-hkx',progress=15,message=i18n.t('lib.nativeDecodeStage'))
             self._process(jid,[sys.executable,'-B','-m','hangar.native_animation',str(request)],out/'conversion.log')
             if jid and self.cancelled(jid):
                 return
@@ -256,7 +403,7 @@ class AssetLibrary:
                 proof=read_json(out/'binding.json',{})
                 approximate=proof.get('motion_processing',{}).get('experimental',False)
                 availability={'status':'approximate' if approximate else 'playable',
-                              'reason':'使用逐帧来源归因的安全旋转投影；原版视觉与运行时一致性未验证。' if approximate else '技术转换和GLB校验通过；视觉正确性与原版一致性尚未认证。'}
+                              'reason':i18n.t('lib.availabilityApprox') if approximate else i18n.t('lib.availabilityPlayable')}
                 self.motion_cache.put(status_key,availability=availability)
                 self.motion_cache.put(cache_key,job_id=jid)
         return self._create('library-animation',{'asset_id':asset['id'],'clip_id':clip['id'],
@@ -267,12 +414,12 @@ class AssetLibrary:
             for row in self.data['assets']:
                 if row['id'] == asset_id:
                     return copy.deepcopy(row)
-        raise NotFound('馆藏资源不存在，请重新导入目录。')
+        raise NotFound(i18n.t('lib.assetNotFound'))
 
     def _create(self, kind, payload, fn):
         with self.lock:
             if self.app.jobs.active(kind):
-                raise Conflict('library_busy','已有同类资源任务，请等待完成或取消。')
+                raise Conflict('library_busy',i18n.t('lib.libraryBusy'))
             job = self.app.jobs.create(kind,payload)
             self.app.jobs.submit(job['id'],fn)
         return {'job_id':job['id'],'job':job}
@@ -292,7 +439,7 @@ class AssetLibrary:
             roots = [roots]
         roots = self.app._validate_roots(roots)
         if not roots:
-            raise HangarError('invalid_roots','请选择包含 FLVER 的展开资源目录。')
+            raise HangarError('invalid_roots',i18n.t('lib.flverRootsRequired'))
         normalized = []
         for root in roots:
             if self.app.engine.resolve_game_dir(root) is not None:
@@ -349,7 +496,7 @@ class AssetLibrary:
             for path in [out/'asset.glb',out/'asset-ue.glb',out/'weapon.glb',*out.glob('mount-*.glb')]:
                 path.unlink(missing_ok=True)
             self.app.jobs.update(jid,status='cancelled',stage='cancelled',progress=100,
-                                 message='资源任务已取消，原有场景与目录保留。',finished_at=now_iso())
+                                 message=i18n.t('lib.jobCancelled'),finished_at=now_iso())
             return True
         return False
 
@@ -387,7 +534,7 @@ class AssetLibrary:
                         continue
                     visited += 1
                     if visited>20000:
-                        raise HangarError('library_too_large','超过 20,000 个模型，请选择更具体的资源目录。')
+                        raise HangarError('library_too_large',i18n.t('lib.tooManyModels'))
                     digest = self.app.engine.hash_cache.sha256(path)
                     if stem.upper() in component_ids:
                         component_sources.setdefault((stem.upper(),digest),str(path.resolve()))
@@ -414,9 +561,9 @@ class AssetLibrary:
                         assets[-1]['assembly_inputs']=resolve_part_inputs(path.parent,stem)
                     if visited%20==0:
                         if jid:
-                            self.app.jobs.update(jid,stage='scan',progress=40,message=f'已索引 {len(assets)} 个真实模型…')
+                            self.app.jobs.update(jid,stage='scan',progress=40,message=i18n.t('lib.scanProgress',count=len(assets)))
         if not assets:
-            raise HangarError('no_models','目录内未找到玩家部件、WP 武器或 cXXXX 敌方 FLVER。原有目录已保留。')
+            raise HangarError('no_models',i18n.t('lib.noModelsFound'))
         for asset in assets:
             npc=self.npc_profiles.get(asset['resource_id'],{})
             if npc.get('source_sha256')==asset['sha256']:
@@ -440,7 +587,7 @@ class AssetLibrary:
             atomic_write_json(self.path,data)
             self.data = data
             if jid:
-                self._complete(jid,result={'counts':data['counts']},message=f'馆藏已就绪：{len(assets)} 个真实模型。')
+                self._complete(jid,result={'counts':data['counts']},message=i18n.t('lib.scanDone',count=len(assets)))
 
     def preview(self, payload):
         asset = self.lookup(payload.get('asset_id'))
@@ -475,18 +622,18 @@ class AssetLibrary:
     def _preview(self, jid, asset):
         source = Path(asset['source'])
         if not source.is_file() or sha256_file(source)!=asset['sha256']:
-            raise HangarError('source_changed','原始模型已变化或不存在，请重新索引。')
+            raise HangarError('source_changed',i18n.t('lib.sourceChanged'))
         out = self.app.engine.job_output_dir(jid)
         out.mkdir(parents=True,exist_ok=True)
         request = out/'static-request.json'
         components=[c for c in asset.get('components',[]) if c.get('source')]
         for component in components:
             if not Path(component['source']).is_file() or sha256_file(Path(component['source']))!=component['sha256']:
-                raise HangarError('component_changed','关联部件已变化，请重新导入资源目录。')
+                raise HangarError('component_changed',i18n.t('lib.componentChanged'))
         atomic_write_json(request,{'source':str(source),'kind':asset['kind'],'components':components,
                                    'output':str(out/'asset.glb'),'report':str(out/'binding.json'),
                                    **self._material_request()})
-        self.app.jobs.update(jid,stage='convert',progress=15,message='正在转换源模型与刚性骨骼…')
+        self.app.jobs.update(jid,stage='convert',progress=15,message=i18n.t('lib.convertStage'))
         self._process(jid,[sys.executable,'-B','-m','hangar.static_asset',str(request)],out/'conversion.log')
         if self.cancelled(jid):
             return
@@ -494,7 +641,7 @@ class AssetLibrary:
 
     def _finish_preview(self,jid,asset,out,mount=None,dynamic=None,extra_result=None):
         glb = out/'asset.glb'
-        self.app.jobs.update(jid,stage='validate',progress=75,message='校验生成的 GLB…')
+        self.app.jobs.update(jid,stage='validate',progress=75,message=i18n.t('lib.validateStage'))
         validator = self.app.root/'runtime/tools/gltf-validator'
         script = "const fs=require('fs'),v=require(process.argv[1]);v.validateBytes(new Uint8Array(fs.readFileSync(process.argv[2])),{maxIssues:30}).then(r=>{fs.writeFileSync(process.argv[3],JSON.stringify(r));process.exitCode=r.issues.numErrors?1:0}).catch(e=>{console.error(e);process.exitCode=1})"
         self._process(jid,[str(self.app.root/'runtime/tools/node.exe'),'-e',script,str(validator),str(glb),str(out/'validation.json')],out/'validator.log')
@@ -507,21 +654,21 @@ class AssetLibrary:
                   'validation':read_json(out/'validation.json',{}).get('issues'),
                   'materials':read_json(out/'materials.json',None),
                   'material_signature':read_json(out/'materials.json',{}).get('signature'),
-                  'warnings':['静态源姿态；已关联原版纹理随 GLB 保留，着色器/图层仍含近似，原游戏视觉与动态外观 not_verified。']}
+                  'warnings':[i18n.t('lib.warnStaticPose')]}
         missing=[c['resource_id'] for c in asset.get('components',[]) if not c.get('source')]
         if missing:
-            result['warnings'].append('当前仅显示主体，缺少关联部件：'+', '.join(missing)+'。请导入这些原始部件所在的 expanded 目录。')
+            result['warnings'].append(i18n.t('lib.warnMissingComponents',ids=', '.join(missing)))
         if dynamic:
             result['native_dynamics']=dynamic
-            result['warnings']=['真实 HKX / 同角色骨架绑定；动作语义 UNKNOWN，不含行为图、IK、物理与 FX。原游戏动态外观 not_verified。']
+            result['warnings']=[i18n.t('lib.warnDynamicBinding')]
             if dynamic.get('experimental_spline_rotation'):
-                result['warnings'].insert(0,'实验性样条旋转投影：单位旋转为经数值归因后的预览转换，不保证 AC6 原版消费一致；严格解码仍保持拒绝。')
+                result['warnings'].insert(0,i18n.t('lib.warnSplineProjection'))
         if mount:
             result['mount']=mount
             experimental=any(p.get('mode')=='experimental' for p in mount.get('mounts',[mount]))
             result['mount_verification']='experimental_not_verified' if experimental else 'parameter_dummy_technical'
-            result['warnings']=['包含实验性装配：候选 Dummy 与手动偏移，仅供自由组合，不保证原版一致。' if experimental else '参数与 Dummy 挂点技术验证。',
-                                '保留机体动画；武器收折 UNKNOWN，动态外观 not_verified。']
+            result['warnings']=[i18n.t('lib.warnMountExperimental') if experimental else i18n.t('lib.warnMountTechnical'),
+                                i18n.t('lib.warnMountFold')]
             if mount.get('material_body_snapshot',{}).get('warning'):
                 result['warnings'].append(mount['material_body_snapshot']['warning'])
         with self.lock:
@@ -535,7 +682,7 @@ class AssetLibrary:
                             ('reconstructed','material_count','images','fidelity','visual_parity')}
             atomic_write_json(self.path,self.data)
         result.update(extra_result or {})
-        if not self._complete(jid,result=result,message='模型已转换并通过 GLB 校验。'):
+        if not self._complete(jid,result=result,message=i18n.t('lib.previewDone')):
             return
         self.app._last_viewed_job=jid
         self.app._maintain_cache(jid)
@@ -555,19 +702,19 @@ class AssetLibrary:
                     if self.app.jobs.get(jid)['kind']=='library-animation':
                         native=read_json(Path(log_path).parent/'native-stage.json',{})
                         if native.get('stage') and native['stage']!=last_native_stage:
-                            labels={'native-skeleton':'检查动作源骨架…','native-geometry':'准备实际模型蒙皮…',
-                                    'native-decode':'解码原始动作…','native-rotation-safety':'检查安全旋转处理…',
-                                    'native-skin-bounds':'计算逐帧蒙皮与取景范围…','native-write':'生成动态GLB…'}
+                            labels={'native-skeleton':i18n.t('lib.stageNativeSkeleton'),'native-geometry':i18n.t('lib.stageNativeGeometry'),
+                                    'native-decode':i18n.t('lib.stageNativeDecode'),'native-rotation-safety':i18n.t('lib.stageNativeRotationSafety'),
+                                    'native-skin-bounds':i18n.t('lib.stageNativeSkinBounds'),'native-write':i18n.t('lib.stageNativeWrite')}
                             last_native_stage=native['stage']
                             self.app.jobs.update(jid,stage=last_native_stage,progress=native.get('progress',20),
-                                                 message=labels.get(last_native_stage,'正在处理动作…'))
+                                                 message=labels.get(last_native_stage,i18n.t('lib.stageNativeProcessing')))
                     if self.app.jobs.should_cancel(jid) or self.app._closing.is_set():
                         self.app._kill_tree(proc)
                         proc.wait(timeout=10)
                         return
                     if time.monotonic()>deadline:
                         self.app._kill_tree(proc)
-                        raise HangarError('asset_timeout','模型转换超时；已停止子进程，原有场景保留。')
+                        raise HangarError('asset_timeout',i18n.t('lib.conversionTimeout'))
                     try:
                         proc.wait(timeout=.2)
                     except subprocess.TimeoutExpired:
@@ -580,15 +727,15 @@ class AssetLibrary:
                         from .motion_policy import failure_status
                         explanation=failure_status(reason or tail)['reason']
                         raise HangarError('native_animation_failed',
-                            '此动作暂时无法可靠加载。'+explanation+' 已保留当前模型、动作和导出目标。',
+                            i18n.t('lib.nativeAnimationFailed',reason=explanation),
                             details={'log':str(log_path),'tail':tail})
                     if self.app.jobs.get(jid)['kind']=='library-mount' and any(s in tail for s in (
                         'expected one actual source anchor','Dummy is not a verified following attachment',
                         'Body GLB lacks source attachment bone','Attachment bone lacks a measured inverse bind',
                         'Actual source anchor has no unique measured geometry transform')):
-                        raise HangarError('mount_anchor_unavailable','当前机体缺少所选候选挂点、对应骨骼或有效变换；请选择其他候选或更换机体。',
+                        raise HangarError('mount_anchor_unavailable',i18n.t('lib.mountAnchorUnavailable'),
                                           details={'log':str(log_path),'tail':tail})
-                    raise HangarError('asset_conversion_failed','该资源的转换或验证失败，原有场景保留。',details={
+                    raise HangarError('asset_conversion_failed',i18n.t('lib.conversionFailed'),details={
                         'log':str(log_path),'tail':tail})
             finally:
                 with self.app._lock:
@@ -597,7 +744,7 @@ class AssetLibrary:
     def export(self,payload):
         job = self.app.jobs.get(payload.get('job_id',''))
         if job.get('kind') not in ('library-preview','library-mount','library-animation','player-motion') or job['status']!='completed':
-            raise HangarError('asset_not_ready','请先成功预览要导出的资源。')
+            raise HangarError('asset_not_ready',i18n.t('lib.exportNotReady'))
         directory = self.app._export_directory(payload.get('directory'))
         filename = safe_filename(payload.get('filename') or job['result']['asset']['resource_id']+'.glb')
         if not filename.lower().endswith('.glb'):
@@ -611,51 +758,51 @@ class AssetLibrary:
             artifact=source['result']['artifact']
             src=Path(artifact['path'])
             if not src.is_file() or sha256_file(src)!=artifact['sha256']:
-                raise HangarError('artifact_changed','模型缓存已变化，请重新预览后导出。')
+                raise HangarError('artifact_changed',i18n.t('lib.artifactChanged'))
             directory.mkdir(parents=True,exist_ok=True)
             dest=unique_path(directory,Path(filename).stem,'.glb')
             shutil.copy2(src,dest)
             if sha256_file(dest)!=artifact['sha256']:
                 dest.unlink(missing_ok=True)
-                raise HangarError('export_mismatch','导出文件校验失败。')
+                raise HangarError('export_mismatch',i18n.t('lib.exportMismatch'))
             result={'file':str(dest),'bytes':dest.stat().st_size,'sha256':artifact['sha256'],'output_valid':True,
                     'materials':source['result'].get('materials'),
                     'material_fidelity':(source['result'].get('materials') or {}).get('fidelity','visual_approximation'),
                     'dynamic_appearance':'not_verified'}
             if source['result'].get('native_dynamics'):
                 result['native_dynamics']=source['result']['native_dynamics']
-            if not self._complete(jid,result=result,message='GLB 已保存。'):
+            if not self._complete(jid,result=result,message=i18n.t('lib.exportDone')):
                 dest.unlink(missing_ok=True)
 
     def _body(self,job_id):
         source_job=self.app.jobs.get(job_id or '')
         body=self.app.jobs.get(source_job['request']['original_body_job']) if source_job.get('kind') in ('library-mount','player-motion') else source_job
         if body.get('kind')!='build' or body['status']!='completed':
-            raise HangarError('body_not_ready','请先在整备工位装配一台有效机体。')
+            raise HangarError('body_not_ready',i18n.t('lib.bodyNotReady'))
         return source_job,body
 
     def _selection(self,weapon,slot,mode,adjustment=None,candidate_reference=None):
         if weapon['kind']!='weapon' or slot not in EXPERIMENTAL_ANCHORS or mode not in ('verified','experimental'):
-            raise HangarError('invalid_mount','请选择真实武器、四个装配槽之一与有效装配模式。')
+            raise HangarError('invalid_mount',i18n.t('lib.mountSelectionInvalid'))
         adjustment={} if adjustment is None else adjustment
         if not isinstance(adjustment,dict):
-            raise HangarError('invalid_adjustment','调整参数需为 XYZ 位置与旋转对象。')
+            raise HangarError('invalid_adjustment',i18n.t('lib.adjustmentObjectRequired'))
         normalized={}
         for name,limit in [('translation',100),('rotation',360)]:
             values=adjustment.get(name,[0,0,0])
             if not isinstance(values,list) or len(values)!=3 or any(isinstance(v,bool) or not isinstance(v,(int,float)) or abs(v)>limit or not math.isfinite(v) for v in values):
-                raise HangarError('invalid_adjustment','位置需为 ±100 米内 XYZ，角度为 ±360 度内 XYZ 有限数值。')
+                raise HangarError('invalid_adjustment',i18n.t('lib.adjustmentRange'))
             normalized[name]=values
         profile=self.mount_profiles.get(weapon['resource_id'],{})
         proven=profile.get('source_sha256')==weapon['sha256'] and slot in profile.get('slots',{})
         if mode=='verified' and (not proven or any(normalized['translation']+normalized['rotation'])):
-            raise HangarError('mount_not_verified','此槽位或手动调整没有原版依据；请选择实验性装配。')
+            raise HangarError('mount_not_verified',i18n.t('lib.mountNotVerified'))
         if mode=='verified' and candidate_reference is not None:
-            raise HangarError('invalid_anchor','自选候选挂点只适用于实验性装配。')
+            raise HangarError('invalid_anchor',i18n.t('lib.anchorExperimentalOnly'))
         if mode=='experimental':
             candidate_reference=candidate_reference if candidate_reference is not None else EXPERIMENTAL_ANCHORS[slot]
             if candidate_reference not in EXPERIMENTAL_OPTIONS[slot]:
-                raise HangarError('invalid_anchor','该候选挂点不属于所选槽位；请选择列出的手掌、前臂或肩部锚点。')
+                raise HangarError('invalid_anchor',i18n.t('lib.anchorSlotMismatch'))
         return {'asset_id':weapon['id'],'mode':mode,'adjustment':normalized,'candidate_reference':candidate_reference}
 
     def mount(self,payload):
@@ -671,19 +818,19 @@ class AssetLibrary:
         selections=self._normalise_selections(selections)
         body_dir=self.app.engine.job_output_dir(body['id'])
         if not (body_dir/'geometry-proof.json').is_file():
-            raise HangarError('mount_frame_missing','机体缓存缺少几何坐标信息，请重新构建机体后再试。')
+            raise HangarError('mount_frame_missing',i18n.t('lib.mountFrameMissing'))
         req={'weapon_id':weapon['id'],'build_job_id':source_job['id'],'original_body_job':body['id'],
              'weapon_selections':selections}
         return self._create('library-mount',req,lambda jid:self._mount(jid,weapon,body,body_dir,selections))
 
     def _normalise_selections(self,raw):
         if not isinstance(raw,dict) or not raw:
-            raise HangarError('assembly_empty','该组合没有有效武器配置，请重新保存。')
+            raise HangarError('assembly_empty',i18n.t('lib.assemblyEmpty'))
         selections={}
         for slot,selection in raw.items():
             if isinstance(selection,str):selection={'asset_id':selection,'mode':'verified'}
             if not isinstance(selection,dict) or not selection.get('asset_id'):
-                raise HangarError('assembly_invalid','组合中的武器配置无效，请重新保存。')
+                raise HangarError('assembly_invalid',i18n.t('lib.assemblyInvalid'))
             asset=self.lookup(selection['asset_id'])
             selections[slot]=self._selection(asset,slot,selection.get('mode','verified'),selection.get('adjustment'),selection.get('candidate_reference'))
         return selections
@@ -691,9 +838,9 @@ class AssetLibrary:
     def save_assembly(self,payload):
         job=self.app.jobs.get(payload.get('job_id',''))
         if job['kind'] not in ('library-mount','player-motion') or job['status']!='completed':
-            raise HangarError('assembly_not_ready','请先完成一套武器装配再保存。')
+            raise HangarError('assembly_not_ready',i18n.t('lib.assemblyNotReady'))
         _,body=self._body(job['id'])
-        name=str(payload.get('name') or '').strip()[:80] or '我的武器组合'
+        name=str(payload.get('name') or '').strip()[:80] or i18n.t('lib.defaultWeaponPresetName')
         recipe={'id':os.urandom(12).hex(),'name':name,'parts':body['request']['parts'],
                 'weapon_selections':self._normalise_selections(job['request'].get('weapon_selections')),
                 'verification':job['result'].get('mount_verification','parameter_dummy_technical'),
@@ -708,10 +855,10 @@ class AssetLibrary:
     def load_assembly(self,payload):
         recipe=next((p for p in self.snapshot().get('assembly_presets',[]) if isinstance(p,dict) and p.get('id')==payload.get('preset_id')),None)
         if not recipe:
-            raise NotFound('武器组合不存在。')
+            raise NotFound(i18n.t('lib.presetNotFound'))
         source,body=self._body(payload.get('build_job_id'))
         if recipe.get('parts')!=body['request']['parts']:
-            raise HangarError('assembly_body_mismatch','此组合的机体部件已不同，请先恢复保存时的四槽机体。',details={'parts':recipe['parts']})
+            raise HangarError('assembly_body_mismatch',i18n.t('lib.assemblyBodyMismatch'),details={'parts':recipe['parts']})
         selections=self._normalise_selections(recipe.get('weapon_selections'))
         weapon=self.lookup(next(iter(selections.values()))['asset_id'])
         return self._start_mount(weapon,source,body,selections)
@@ -719,7 +866,7 @@ class AssetLibrary:
     def _mount(self,jid,weapon,body,body_dir,selections):
         artifact=body['result'].get('artifact_ue') or body['result']['artifact']
         if sha256_file(Path(artifact['path']))!=artifact['sha256']:
-            raise HangarError('source_changed','机体缓存或武器输入已变化，请重新生成。')
+            raise HangarError('source_changed',i18n.t('lib.mountCacheChanged'))
         chosen=[]
         for slot,selection in selections.items():
             # H06 jobs stored string ids; retain recovery compatibility.
@@ -728,12 +875,12 @@ class AssetLibrary:
             selection=self._selection(selected,slot,selection.get('mode','verified'),selection.get('adjustment'),selection.get('candidate_reference'))
             profile=self.mount_profiles.get(selected['resource_id'],{})
             if sha256_file(Path(selected['source']))!=selected['sha256']:
-                raise HangarError('mount_source_changed','已选武器资源已变化，请重新导入。')
+                raise HangarError('mount_source_changed',i18n.t('lib.weaponSourceChanged'))
             part_slot='AM' if slot.endswith('hand') else 'BD'
             part_id=body['request']['parts'][part_slot]
             part=next((p for p in self.app.catalog_store.snapshot()['parts'] if p['id']==part_id),None)
             if not part or not part.get('flver'):
-                raise HangarError('mount_source_missing','机体原始部件离线，请重新导入。')
+                raise HangarError('mount_source_missing',i18n.t('lib.bodyPartOffline'))
             chosen.append({'slot':slot,'weapon':selected['source'],'part':part['flver'],
                            'reference':profile['slots'][slot] if selection['mode']=='verified' else selection['candidate_reference'],
                            'mode':selection['mode'],'adjustment':selection['adjustment']})
@@ -747,7 +894,7 @@ class AssetLibrary:
                 slot.lower():p['flver'] for slot,part_id in body['request']['parts'].items()
                 for p in self.app.catalog_store.snapshot()['parts'] if p['id']==part_id},
             **self._material_request(body['request'].get('roots',[]))})
-        self.app.jobs.update(jid,stage='mount',progress=20,message='按参数与原始 Dummy 构建跟随挂点…')
+        self.app.jobs.update(jid,stage='mount',progress=20,message=i18n.t('lib.mountStage'))
         self._process(jid,[sys.executable,'-B','-m','hangar.mount_asset',str(request)],out/'conversion.log')
         if self.cancelled(jid):
             return

@@ -7,12 +7,14 @@ import { StorageManager } from './storage.js';
 import { escapeHtml } from './dom.js';
 import { motionPage } from './motion-page.mjs';
 import {arrangePlayer} from './feature-modules.js';
+import { t, applyDOM } from './i18n.js';
+import './strings-clips.js';
 
 export class AnimationCatalog {
   constructor(containerId, options = {}) {
     this.container = document.getElementById(containerId);
     if (!this.container) {
-      throw new Error(`找不到动画目录容器 #${containerId}`);
+      throw new Error(t('clips.containerNotFound', { id: containerId }));
     }
 
     this.clips = [];
@@ -44,39 +46,39 @@ export class AnimationCatalog {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
-          HKX 动画资源库
+          <span data-i18n="clips.title"></span>
         </span>
-        <button id="btn-try-unknown-clip" class="btn-cyan btn-icon" title="手动输入任意未知 HKX 编号并尝试解码装配">
+        <button id="btn-try-unknown-clip" class="btn-cyan btn-icon" data-i18n-title="clips.tryUnknownTip">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-          未知动画试验
+          <span data-i18n="clips.tryUnknown"></span>
         </button>
       </div>
 
       <!-- 检索与分类工具栏 -->
       <div class="catalog-toolbar">
-        <p class="form-hint">点击动作自动预览；使用当前已构建机体，未 Build 的部件修改不参与。</p>
-        <label>播放模式 <select id="player-root-mode"><option value="inplace">In-Place · 原地（保留垂直运动）</option><option value="root">Root Motion · 整体位移</option></select></label>
+        <p class="form-hint" data-i18n="clips.hint"></p>
+        <label><span data-i18n="clips.playMode"></span> <select id="player-root-mode"><option value="inplace" data-i18n="clips.modeInplace"></option><option value="root" data-i18n="clips.modeRoot"></option></select></label>
         <div class="search-box-wrap">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="search" id="clips-search" placeholder="检索 HKX 动作名、档案或剪辑编号 (如 a000_...)..." />
+          <input type="search" id="clips-search" placeholder="" data-i18n-placeholder="clips.searchPlaceholder" />
         </div>
         <div class="catalog-filter-options">
-          <select id="player-motion-type"><option value="all">全部类型</option><option value="spline">压缩样条</option><option value="other">其他 / 未知</option></select>
-          <select id="player-motion-status"><option value="all">全部状态</option><option value="resident">已驻留</option><option value="attempt">待加载</option><option value="error">索引错误</option></select>
-          <select id="player-motion-sort"><option value="id">动作 ID</option><option value="duration">时长</option><option value="frames">帧数</option></select>
+          <select id="player-motion-type"><option value="all" data-i18n="clips.typeAll"></option><option value="spline" data-i18n="clips.typeSpline"></option><option value="other" data-i18n="clips.typeOther"></option></select>
+          <select id="player-motion-status"><option value="all" data-i18n="clips.statusAll"></option><option value="resident" data-i18n="clips.statusResident"></option><option value="attempt" data-i18n="clips.statusAttempt"></option><option value="error" data-i18n="clips.statusError"></option></select>
+          <select id="player-motion-sort"><option value="id" data-i18n="clips.sortId"></option><option value="duration" data-i18n="clips.sortDuration"></option><option value="frames" data-i18n="clips.sortFrames"></option></select>
           <label class="filter-checkbox-label">
             <input type="checkbox" id="chk-clip-verified" />
-            仅有参考注释
+            <span data-i18n="clips.onlyAnnotated"></span>
           </label>
           <label class="filter-checkbox-label">
             <input type="checkbox" id="chk-clip-fav" />
-            仅显示收藏
+            <span data-i18n="clips.onlyFavs"></span>
           </label>
         </div>
       </div>
@@ -84,12 +86,12 @@ export class AnimationCatalog {
       <!-- 选择摘要：数量不限，展示实际成本 -->
       <div id="clips-selection-bar" class="clips-selection-bar">
         <div class="selection-count-wrap">
-          <span id="clips-selected-count">已选 0 段</span>
+          <span id="clips-selected-count" data-i18n="clips.selectedInitial"></span>
           <span id="clips-selected-cost" class="selection-cost-dim">—</span>
         </div>
         <div class="selection-actions">
-          <button id="btn-clips-select-all" class="btn-mini" title="选择当前筛选结果中的全部动画">全选筛选结果</button>
-          <button id="btn-clips-clear" class="btn-mini" title="清空选择（绑定姿势）">清空</button>
+          <button id="btn-clips-select-all" class="btn-mini" data-i18n-title="clips.selectAllTip" data-i18n="clips.selectAll"></button>
+          <button id="btn-clips-clear" class="btn-mini" data-i18n-title="clips.clearTip" data-i18n="clips.clear"></button>
         </div>
       </div>
 
@@ -99,6 +101,7 @@ export class AnimationCatalog {
       </div>
       <div id="player-motion-pages" class="h13-motion-pages"></div>
     `;
+    applyDOM(this.container);
   }
 
   _bindEvents() {
@@ -147,7 +150,7 @@ export class AnimationCatalog {
     // 未知动画尝试按钮
     const btnTryUnknown = this.container.querySelector('#btn-try-unknown-clip');
     btnTryUnknown.addEventListener('click', () => {
-      const input = prompt('请输入想要尝试的 HKX 动画编号 (例如 a000_010000 或自定义编号):', 'a000_010000');
+      const input = prompt(t('clips.promptUnknown'), 'a000_010000');
       if (input && input.trim()) {
         const clipId = input.trim();
         // 允许任意未知动画加入
@@ -164,13 +167,13 @@ export class AnimationCatalog {
    * @param {string} clipId
    */
   addUnknownClip(clipId) {
-    if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(clipId)) { alert('请输入有效的动画资源标识。'); return; }
+    if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(clipId)) { alert(t('clips.invalidClipId')); return; }
     const existing = this.clips.find(c => c.id === clipId);
     if (!existing) {
       this.clips.unshift({
         id: clipId,
-        name: `未知动画尝试 · ${clipId}`,
-        source: '未在当前索引中发现，尝试后返回真实结果',
+        name: t('clips.unknownName', { id: clipId }),
+        source: t('clips.unknownSource'),
         hkx: null,
         compendium: null,
         duration: null,
@@ -270,19 +273,19 @@ export class AnimationCatalog {
     if (!countEl || !costEl) return;
     const selected = this.clips.filter(c => this.selectedClipIds.has(c.id));
     const frames = selected.reduce((sum, c) => sum + (Number(c.frames) || 1), 0);
-    countEl.textContent = `已选 ${selected.length} 段 / 共 ${this.clips.length} 段`;
+    countEl.textContent = t('clips.selectedCount', { count: selected.length, total: this.clips.length });
     if (!selected.length) {
-      costEl.textContent = '未选择动画时装配为绑定姿势';
+      costEl.textContent = t('clips.noneSelected');
       return;
     }
     const base = 9 * 1024 * 1024;
     const estBytes = base + frames * 15 * 1024;
     const single = this.limits?.single_file_bytes;
-    const parts = [`${frames.toLocaleString()} 帧`, `预计 ${this._mb(estBytes)}`];
+    const parts = [t('clips.framesCount', { frames: frames.toLocaleString() }), t('clips.estSize', { size: this._mb(estBytes) })];
     if (single) {
       parts.push(estBytes <= single
-        ? '可单文件导出'
-        : `超过单文件预算 ${this._mb(single)}，导出时自动分批`);
+        ? t('clips.singleFileOk')
+        : t('clips.overBudget', { size: this._mb(single) }));
     }
     costEl.textContent = parts.join(' · ');
   }
@@ -307,7 +310,7 @@ export class AnimationCatalog {
     const filtered = this._filtered();
     const paging=motionPage(filtered,this.page);this.page=paging.page;
     const nav=this.container.querySelector('#player-motion-pages');
-    nav.innerHTML=`<button id="player-page-prev" ${paging.page===1?'disabled':''}>上一页</button><span>第 ${paging.page} / ${paging.pages} 页 · 匹配 ${paging.total} 条</span><button id="player-page-next" ${paging.page===paging.pages?'disabled':''}>下一页</button><input id="player-page-number" aria-label="玩家动作页码" type="number" min="1" max="${paging.pages}" value="${paging.page}"><button id="player-page-go">跳转</button>`;
+    nav.innerHTML=`<button id="player-page-prev" ${paging.page===1?'disabled':''}>${t('clips.prevPage')}</button><span>${t('clips.pageInfo', { page: paging.page, pages: paging.pages, total: paging.total })}</span><button id="player-page-next" ${paging.page===paging.pages?'disabled':''}>${t('clips.nextPage')}</button><input id="player-page-number" aria-label="${t('clips.pageAria')}" type="number" min="1" max="${paging.pages}" value="${paging.page}"><button id="player-page-go">${t('clips.go')}</button>`;
     const go=value=>{this.page=value;this.renderClipsList();listContainer.scrollTop=0;};
     nav.querySelector('#player-page-prev').onclick=()=>go(paging.page-1);
     nav.querySelector('#player-page-next').onclick=()=>go(paging.page+1);
@@ -317,8 +320,8 @@ export class AnimationCatalog {
     if (filtered.length === 0) {
       listContainer.innerHTML = `
         <div style="text-align: center; color: var(--text-muted); padding: 32px 16px; font-size: 12px;">
-          未发现匹配的 HKX 动画资源<br>
-          <span style="font-size: 11px;">(点击右上角可自由尝试任意未知动画)</span>
+          ${t('clips.emptyResult')}<br>
+          <span style="font-size: 11px;">${t('clips.emptyResultHint')}</span>
         </div>
       `;
       return;
@@ -341,26 +344,26 @@ export class AnimationCatalog {
           <div class="clip-info-main">
             <div class="clip-title-row">
               <span class="clip-badge ${isPlayable ? 'ready' : 'unknown'}">
-                ${clip.previewError?'加载失败':isPlayable ? '已解码' : clip.status === 'error' ? '索引错误' : '待尝试'}
+                ${clip.previewError ? t('clips.badgeFailed') : isPlayable ? t('clips.badgeDecoded') : clip.status === 'error' ? t('clips.badgeIndexError') : t('clips.badgePending')}
               </span>
               <span class="clip-name" title="${escapeHtml(clip.hkx || clip.source || clip.name)}">${escapeHtml(clip.name)}</span>
             </div>
             <div class="clip-meta-row">
               <span class="clip-id">${clip.id}</span>
               <span>${clip.duration ? Number(clip.duration).toFixed(2) + 's' : '-'}</span>
-              <span>${clip.frames ? clip.frames + ' 帧' : '-'}</span>
+              <span>${clip.frames ? t('clips.framesCount', { frames: clip.frames }) : '-'}</span>
             </div>
           </div>
           <div class="part-card-actions">
-            <button class="star-btn ${isFav ? 'starred' : ''}" data-action="fav" title="${isFav ? '取消收藏' : '收藏'}">
+            <button class="star-btn ${isFav ? 'starred' : ''}" data-action="fav" title="${isFav ? t('clips.unfav') : t('clips.fav')}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
             </button>
-            <label class="filter-checkbox-label" title="勾选以将其打包并构建入下一次机甲装配">
+            <label class="filter-checkbox-label" title="${t('clips.bundleTip')}">
               <input type="checkbox" class="chk-bundle" ${isChecked ? 'checked' : ''} data-action="bundle" />
             </label>
-              <button class="btn-icon ${isCurrentActive ? 'btn-cyan' : ''}" data-action="play" title="在 3D 视窗播放此动作">
+              <button class="btn-icon ${isCurrentActive ? 'btn-cyan' : ''}" data-action="play" title="${t('clips.playTip')}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                   <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>

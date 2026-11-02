@@ -12,7 +12,46 @@ import urllib.request
 import webbrowser
 
 ROOT = Path(__file__).resolve().parent
+from hangar import i18n
 from hangar.profile import data_directory
+
+i18n.register('launch', {
+    'zh-CN': {
+        'errorTitle': 'ACBridge HANGAR 启动失败',
+        'startupInProgress': '另一个 HANGAR 启动过程尚未完成，请稍后重试。',
+        'noPort': '无法分配可用的本机端口。',
+        'missingRuntime': '缺少 runtime/python.exe。请完整解压 HANGAR 文件夹后重试。',
+        'serviceExited': '本地机库服务已退出。详细原因见 data/server.log。',
+        'serviceTimeout': '本地机库服务未在 35 秒内就绪。请查看 data/server.log 后重试。',
+    },
+    'en': {
+        'errorTitle': 'ACBridge HANGAR startup failed',
+        'startupInProgress': 'Another HANGAR startup is still in progress; try again shortly.',
+        'noPort': 'Could not allocate a free local port.',
+        'missingRuntime': 'runtime/python.exe is missing. Please extract the HANGAR folder fully and try again.',
+        'serviceExited': 'The local hangar service exited. See data/server.log for details.',
+        'serviceTimeout': 'The local hangar service was not ready within 35 seconds. Check data/server.log and retry.',
+    },
+})
+
+
+def _detect_lang():
+    value = os.environ.get('HANGAR_LANG')
+    if value:
+        normalized = i18n.normalize(value)
+        if normalized:
+            return normalized
+    if os.name == 'nt':
+        try:
+            if (ctypes.windll.kernel32.GetUserDefaultUILanguage() & 0x03ff) == 0x0004:
+                return 'zh-CN'
+        except Exception:
+            pass
+        return 'en'
+    return 'zh-CN'
+
+
+i18n.set_current_lang(_detect_lang())
 
 DATA = data_directory(ROOT)
 DATA.mkdir(parents=True, exist_ok=True)
@@ -27,7 +66,7 @@ def health(port):
 
 def show_error(message):
     (DATA/'startup-error.txt').write_text(message,encoding='utf8')
-    if os.name=='nt': ctypes.windll.user32.MessageBoxW(None,message,'ACBridge HANGAR 启动失败',0x10)
+    if os.name=='nt': ctypes.windll.user32.MessageBoxW(None,message,i18n.t('launch.errorTitle'),0x10)
     else: print(message,file=sys.stderr)
 
 def open_window(url):
@@ -55,7 +94,7 @@ def main():
                 try:
                     lock.seek(0);msvcrt.locking(lock.fileno(),msvcrt.LK_NBLCK,1);break
                 except OSError:
-                    if time.monotonic()>deadline: raise RuntimeError('另一个 HANGAR 启动过程尚未完成，请稍后重试。')
+                    if time.monotonic()>deadline: raise RuntimeError(i18n.t('launch.startupInProgress'))
                     time.sleep(.25)
         if STATE.is_file():
             old=json.loads(STATE.read_text(encoding='utf8'))
@@ -68,9 +107,9 @@ def main():
                     with socket.socket() as s:s.bind(('127.0.0.1',candidate))
                     port=candidate;break
                 except OSError:continue
-            if port is None:raise RuntimeError('无法分配可用的本机端口。')
+            if port is None:raise RuntimeError(i18n.t('launch.noPort'))
             python=ROOT/'runtime/python.exe'
-            if not python.is_file(): raise RuntimeError('缺少 runtime/python.exe。请完整解压 HANGAR 文件夹后重试。')
+            if not python.is_file(): raise RuntimeError(i18n.t('launch.missingRuntime'))
             env=dict(os.environ,PYTHONUTF8='1',PYTHONDONTWRITEBYTECODE='1',PYTHONNOUSERSITE='1',HANGAR_QUIET_LAUNCH='1',HANGAR_DATA=str(DATA))
             env['PATH']=str(ROOT/'runtime/tools')+os.pathsep+env.get('PATH','')
             log_path=DATA/'server.log'
@@ -81,8 +120,8 @@ def main():
             STATE.write_text(json.dumps({'port':port,'pid':proc.pid}),encoding='utf8')
             deadline=time.monotonic()+35
             while not health(port):
-                if proc.poll() is not None: raise RuntimeError('本地机库服务已退出。详细原因见 data/server.log。\n'+(DATA/'server.log').read_text(encoding='utf8',errors='replace')[-2500:])
-                if time.monotonic()>deadline: raise RuntimeError('本地机库服务未在 35 秒内就绪。请查看 data/server.log 后重试。')
+                if proc.poll() is not None: raise RuntimeError(i18n.t('launch.serviceExited')+'\n'+(DATA/'server.log').read_text(encoding='utf8',errors='replace')[-2500:])
+                if time.monotonic()>deadline: raise RuntimeError(i18n.t('launch.serviceTimeout'))
                 time.sleep(.25)
         url=f'http://127.0.0.1:{port}/'
         if '--no-browser' not in sys.argv: open_window(url)

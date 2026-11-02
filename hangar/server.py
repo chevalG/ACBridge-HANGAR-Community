@@ -17,6 +17,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from . import __version__
+from . import i18n
 from .errors import HangarError, NotFound
 from .util import sha256_file
 
@@ -61,7 +62,7 @@ display:grid;place-items:center;height:100vh;margin:0}main{max-width:560px;paddi
 border:1px solid #2a3644;background:#161d25}h1{font-size:18px;letter-spacing:.16em;
 color:#e8b45a}code{color:#9fc7e8}</style></head><body><main>
 <h1>ACBridge HANGAR · BACKEND READY</h1>
-<p>本地服务已启动，但前端静态资源尚未安装到 <code>web/</code>。</p>
+<p>本地服务已启动，但前端静态资源尚未安装到 <code>web/</code>。<br>The local service is running, but the frontend static assets are not installed under <code>web/</code>.</p>
 <p>API: <code>/api/health</code> · <code>/api/state</code></p>
 <p>启动方式：<code>python -m hangar --port N</code></p>
 </main></body></html>"""
@@ -141,10 +142,10 @@ class HangarHandler(BaseHTTPRequestHandler):
                 if not sep:
                     port = ''
             if hostname.lower() not in LOOPBACK:
-                self._error(421, 'host_not_allowed', '只允许通过本机回环地址访问 HANGAR。')
+                self._error(421, 'host_not_allowed', i18n.t('server.loopbackOnly'))
                 return False
             if port and port != str(self.server.server_address[1]):
-                self._error(421, 'host_not_allowed', 'Host 端口与本地服务不一致。')
+                self._error(421, 'host_not_allowed', i18n.t('server.hostPortMismatch'))
                 return False
         origin = self.headers.get('Origin')
         if origin:
@@ -156,7 +157,7 @@ class HangarHandler(BaseHTTPRequestHandler):
                     (parsed.hostname or '').lower() not in LOOPBACK or \
                     parsed.port != self.server.server_address[1]:
                 self._error(403, 'origin_not_allowed',
-                            '拒绝非同源浏览器请求；HANGAR 只接受本机界面发起的操作。')
+                            i18n.t('server.originRejected'))
                 return False
         return True
 
@@ -165,29 +166,29 @@ class HangarHandler(BaseHTTPRequestHandler):
         if length is None:
             if allow_empty:
                 return {}
-            raise HangarError('invalid_body', '请求缺少 Content-Length。', 411)
+            raise HangarError('invalid_body', i18n.t('server.missingContentLength'), 411)
         try:
             length = int(length)
         except ValueError as ex:
-            raise HangarError('invalid_body', 'Content-Length 无效。', 400) from ex
+            raise HangarError('invalid_body', i18n.t('server.invalidContentLength'), 400) from ex
         if length > MAX_BODY:
-            raise HangarError('body_too_large', '请求体超过 1 MiB。', 413)
+            raise HangarError('body_too_large', i18n.t('server.bodyTooLarge'), 413)
         if length < 0:
-            raise HangarError('invalid_body', 'Content-Length 无效。', 400)
+            raise HangarError('invalid_body', i18n.t('server.invalidContentLength'), 400)
         if length == 0:
             if allow_empty:
                 return {}
-            raise HangarError('invalid_body', '请求体不能为空。', 400)
+            raise HangarError('invalid_body', i18n.t('server.emptyBody'), 400)
         content_type = (self.headers.get('Content-Type') or '').split(';')[0].strip().lower()
         if content_type != 'application/json':
-            raise HangarError('invalid_content_type', '请使用 application/json 请求体。', 415)
+            raise HangarError('invalid_content_type', i18n.t('server.jsonContentType'), 415)
         raw = self.rfile.read(length)
         try:
             payload = json.loads(raw.decode('utf-8'))
         except (UnicodeDecodeError, ValueError) as ex:
-            raise HangarError('invalid_json', '请求体不是有效的 UTF-8 JSON。', 400) from ex
+            raise HangarError('invalid_json', i18n.t('server.invalidUtf8Json'), 400) from ex
         if not isinstance(payload, dict):
-            raise HangarError('invalid_body', '请求体必须是 JSON 对象。', 400)
+            raise HangarError('invalid_body', i18n.t('server.jsonObjectRequired'), 400)
         return payload
 
     # ----------------------------------------------------------------- verbs
@@ -207,11 +208,13 @@ class HangarHandler(BaseHTTPRequestHandler):
         self._route('DELETE')
 
     def do_OPTIONS(self):
-        self._error(405, 'method_not_allowed', 'HANGAR 不支持跨域预检；请从本地界面访问。',
+        self._error(405, 'method_not_allowed', i18n.t('server.noPreflight'),
                    {'allow': 'GET, HEAD, POST, PUT, DELETE'})
 
     def _route(self, method):
         try:
+            # 每个请求都按浏览器报来的语言返回文案（无头/测试缺省 zh-CN）
+            i18n.set_current_lang(self.headers.get('X-Hangar-Lang'))
             if not self._check_host_origin():
                 return
             parsed = urlsplit(self.path)
@@ -220,14 +223,14 @@ class HangarHandler(BaseHTTPRequestHandler):
                 self._api(method, path, parse_qs(parsed.query))
             elif path.startswith('/models/'):
                 if method not in ('GET', 'HEAD'):
-                    self._error(405, 'method_not_allowed', '模型文件只支持 GET。',
+                    self._error(405, 'method_not_allowed', i18n.t('server.modelsGetOnly'),
                                 {'allow': 'GET, HEAD'})
                 else:
                     self._model(path)
             elif method in ('GET', 'HEAD'):
                 self._static(path)
             else:
-                self._error(404, 'not_found', '未知接口。')
+                self._error(404, 'not_found', i18n.t('server.unknownEndpoint'))
         except HangarError as ex:
             self._error(ex.status, ex.code, ex.message, ex.details)
         except (BrokenPipeError, ConnectionResetError):
@@ -236,7 +239,7 @@ class HangarHandler(BaseHTTPRequestHandler):
             log.exception('unhandled request error: %s %s', method, self.path)
             try:
                 self._error(500, 'internal_error',
-                            f'服务器内部错误：{type(ex).__name__}: {ex}')
+                            i18n.t('server.internalError', kind=type(ex).__name__, detail=ex))
             except Exception:  # noqa: BLE001
                 self.close_connection = True
 
@@ -253,7 +256,7 @@ class HangarHandler(BaseHTTPRequestHandler):
             else:
                 target,digest=fxr_playback.texture(app.data_dir,(query or {}).get('id',[''])[0])
                 if not target.is_file() or sha256_file(target)!=digest:
-                    raise HangarError('fxr_texture_changed','特效纹理缺失或哈希变化，请重新准备。')
+                    raise HangarError('fxr_texture_changed', i18n.t('server.fxrTextureChanged'))
                 self._send_file(target,'image/png',cache='no-store')
             return
         if path in ('/api/fxr/catalog','/api/fxr/resource'):
@@ -268,11 +271,11 @@ class HangarHandler(BaseHTTPRequestHandler):
                     ident=int((query or {}).get('effect',[''])[0])
                     name=(query or {}).get('name',[''])[0]
                 except (ValueError,TypeError):
-                    raise HangarError('fxr_resource_missing','特效资源标识无效。',404)
+                    raise HangarError('fxr_resource_missing', i18n.t('server.fxrResourceMissing'), 404)
                 target=fxr_resources.resource_file(catalog,ident,name,fxr_source)
                 resource=next(r for r in fxr_resources.effect(catalog,ident)['resources'] if r['name'].casefold()==name.casefold())
                 if sha256_file(target)!=resource['sha256']:
-                    raise HangarError('fxr_resource_changed','特效资源缓存内容已变化，请重新准备。')
+                    raise HangarError('fxr_resource_changed', i18n.t('server.fxrResourceChanged'))
                 self._send_file(target,'image/png' if target.suffix.lower()=='.png' else 'model/gltf-binary',cache='no-store')
             return
         if path == '/api/library':
@@ -331,7 +334,7 @@ class HangarHandler(BaseHTTPRequestHandler):
                     if not 0 <= revision <= 9007199254740991 or not 0 <= wait_ms <= 2000:
                         raise ValueError()
                 except (ValueError, TypeError):
-                    raise HangarError('invalid_job_wait', '作业等待参数必须是有效版本号与 0..2000 毫秒。', 400)
+                    raise HangarError('invalid_job_wait', i18n.t('server.invalidJobWait'), 400)
                 job = app.jobs.wait_for_update(match.group(1), revision, wait_ms / 1000)
             else:
                 job = app.job(match.group(1))
@@ -407,30 +410,30 @@ class HangarHandler(BaseHTTPRequestHandler):
             started = self.server.begin_shutdown()
             self._send_json(200, {'ok': True, 'stopping': True, 'first': started})
             return
-        raise NotFound('未知 API 路径。', {'path': path})
+        raise NotFound(i18n.t('server.unknownApiPath'), {'path': path})
 
     def _require(self, method, allowed):
         if method not in allowed:
-            raise HangarError('method_not_allowed', '请求方法不被支持。', 405,
+            raise HangarError('method_not_allowed', i18n.t('server.methodNotAllowed'), 405,
                               {'allow': ', '.join(allowed)})
 
     # ---------------------------------------------------------------- models
     def _model(self, path):
         match = MODEL_ROUTE.fullmatch(path)
         if not match:
-            raise NotFound('模型地址无效。', {'path': path, 'hint': '仅提供 /models/<job>/asset.glb'})
+            raise NotFound(i18n.t('server.invalidModelPath'), {'path': path, 'hint': '仅提供 /models/<job>/asset.glb'})
         job_id, filename = match.groups()
         job = self.app.jobs.find(job_id)
         if not job or job.get('kind') not in ('build', 'library-preview', 'library-mount', 'library-animation','player-motion') or job.get('status') != 'completed':
-            raise NotFound('模型任务不存在或尚未完成。', {'job_id': job_id})
+            raise NotFound(i18n.t('server.modelJobUnavailable'), {'job_id': job_id})
         root = self.app.engine.job_output_dir(job_id).resolve()
         target = (root / filename).resolve()
         try:
             target.relative_to(root)
         except ValueError:
-            raise NotFound('模型路径越界。') from None
+            raise NotFound(i18n.t('server.modelPathEscape')) from None
         if not target.is_file():
-            raise NotFound('模型文件不存在。', {'filename': filename})
+            raise NotFound(i18n.t('server.modelFileMissing'), {'filename': filename})
         self._send_file(target, MIME[target.suffix], cache='private, max-age=31536000, immutable')
 
     # ---------------------------------------------------------------- static
@@ -438,13 +441,13 @@ class HangarHandler(BaseHTTPRequestHandler):
         web = self.app.web_dir.resolve()
         segments = [s for s in path.split('/') if s not in ('', '.')]
         if any(s == '..' for s in segments) or '\x00' in path or '\\' in path:
-            raise NotFound('静态资源路径无效。')
+            raise NotFound(i18n.t('server.invalidStaticPath'))
         relative = '/'.join(segments)
         target = (web / relative).resolve() if relative else (web / 'index.html').resolve()
         try:
             target.relative_to(web)
         except ValueError:
-            raise NotFound('静态资源路径越界。') from None
+            raise NotFound(i18n.t('server.staticPathEscape')) from None
         if target.is_dir():
             target = target / 'index.html'
         if not target.is_file():
@@ -453,7 +456,7 @@ class HangarHandler(BaseHTTPRequestHandler):
                 self._send_bytes(200, body, 'text/html; charset=utf-8',
                                  cache='no-store')
                 return
-            raise NotFound('静态资源不存在。', {'path': path})
+            raise NotFound(i18n.t('server.staticNotFound'), {'path': path})
         mime = MIME.get(target.suffix.lower()) or mimetypes.guess_type(str(target))[0] \
             or 'application/octet-stream'
         cache = 'no-cache' if target.suffix.lower() in ('.html', '.json') \
@@ -482,7 +485,7 @@ class HangarHandler(BaseHTTPRequestHandler):
             stat = path.stat()
             size = stat.st_size
         except OSError as ex:
-            raise NotFound('文件不可读取。', {'error': str(ex)}) from ex
+            raise NotFound(i18n.t('server.fileUnreadable'), {'error': str(ex)}) from ex
         etag = f'"{stat.st_mtime_ns:x}-{size:x}"'
         if self.headers.get('If-None-Match') == etag:
             self.send_response(304)
@@ -506,7 +509,7 @@ class HangarHandler(BaseHTTPRequestHandler):
                     end = int(last) if last else size - 1
                 end = min(end, size - 1)
                 if start > end or start >= size:
-                    self._error(416, 'range_not_satisfiable', '请求的字节范围无效。',
+                    self._error(416, 'range_not_satisfiable', i18n.t('server.invalidRange'),
                                 {'size': size})
                     return
                 status = 206

@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import {api} from './api.js';
 import {updatePlayerFeatures} from './feature-modules.js';
+import {t} from './i18n.js';
+import './strings-pmotion.js';
 
 export class PlayerMotion {
   constructor(app) { this.app=app; this.version=0; this.pending=null; this.running=false; this.job=null; this.mode='inplace'; this.clip=null; this.cache=new Map(); }
@@ -11,10 +13,10 @@ export class PlayerMotion {
   select(id,mode=this.mode) {
     const app=this.app;
     if(app.isBuilding || !app.lastSuccessfulJobId || !app.viewer.currentModel) {
-      app._showToast('请先完成四槽机体构建；动作预览使用已构建配置。','info');return;
+      app._showToast(t('pmotion.needBuild'),'info');return;
     }
     if(app.isViewingStandalone && !app.studio?.mountedJobId) {
-      app._showToast('请先返回已构建机体，再选择玩家动作。','info');return;
+      app._showToast(t('pmotion.needReturnToBuilt'),'info');return;
     }
     const label=app.clips.clips.find(c=>c.id===id)?.export_label||id;
     const name=label+'_'+mode;
@@ -42,21 +44,21 @@ export class PlayerMotion {
           if(!retained.ok){this.cache.delete(key);result=null;}
         }
         if(!result) {
-          app._showJobOverlay(true,'自动准备玩家动作；采用当前已构建四槽配置…',10);
+          app._showJobOverlay(true,t('pmotion.preparing'),10);
           const response=await api.request('/api/player-motion',{method:'POST',body:JSON.stringify({
             body_job_id:request.body,display_job_id:request.display,clip_id:request.id,root_mode:request.mode})});
           this.job=response.job_id;
           if(!valid())await api.cancelJob(this.job);
-          const completed=await api.pollJob(this.job,j=>{if(valid())app._showJobOverlay(true,j.message||'准备动作…',j.progress);});
+          const completed=await api.pollJob(this.job,j=>{if(valid())app._showJobOverlay(true,j.message||t('pmotion.preparingShort'),j.progress);});
           if(!valid())continue;
-          const payload=await fetch(completed.result.player_motion.animation_url).then(r=>{if(!r.ok)throw new Error('动画轨道读取失败');return r.json();});
+          const payload=await fetch(completed.result.player_motion.animation_url).then(r=>{if(!r.ok)throw new Error(t('pmotion.trackReadFailed'));return r.json();});
           if(!valid())continue;
           const clips=payload.animations.map(animation=>new THREE.AnimationClip(animation.name,-1,animation.tracks.map(track=>{
             const name=THREE.PropertyBinding.sanitizeNodeName(track.node);
             const node=request.model.getObjectByName(name);
-            if(!node)throw new Error('当前机体缺少目标骨骼 '+name);
+            if(!node)throw new Error(t('pmotion.missingBone',{name}));
             const property={translation:'position',rotation:'quaternion',scale:'scale'}[track.path];
-            if(!property)throw new Error('未知动画通道');
+            if(!property)throw new Error(t('pmotion.unknownChannel'));
             return property==='quaternion'?new THREE.QuaternionKeyframeTrack(node.uuid+'.'+property,track.times,track.values):
               new THREE.VectorKeyframeTrack(node.uuid+'.'+property,track.times,track.values);
           })));
@@ -69,7 +71,7 @@ export class PlayerMotion {
         app.animator.installClips(result.clips);
         const label=app.clips.clips.find(c=>c.id===request.id)?.export_label || request.id;
         const name=label+'_'+request.mode;
-        if(!app.animator.actions.has(name))throw new Error('转换结果没有所请求的 Root / In-Place 轨道');
+        if(!app.animator.actions.has(name))throw new Error(t('pmotion.noRequestedTrack'));
         app.activeJobId=result.job;app.lastBuildResult=result.result;
         if(!app.studio?.mountedJobId) {
           app.playerPreviewJobId=result.job;app.lastSuccessfulModelUrl=result.result.model_url;
@@ -89,12 +91,12 @@ export class PlayerMotion {
           this.error=error.message;updatePlayerFeatures(app);
           const entry=app.clips.clips.find(c=>c.id===request.id);if(entry)entry.previewError=error.message;
           app.clips.renderClipsList();
-          app._showModelErrorAlert(error.message,error.details,{title:'动作未加载 · 当前有效机体保留'});
+          app._showModelErrorAlert(error.message,error.details,{title:t('pmotion.errorTitle')});
         }
       } finally {
         this.job=null;
         if(!app.isBuilding && !app.studio?.isOperating)app._showJobOverlay(false);
-        const button=document.getElementById('btn-cancel-build');if(button){button.disabled=false;button.textContent='取消';}
+        const button=document.getElementById('btn-cancel-build');if(button){button.disabled=false;button.textContent=t('ui.common.cancel');}
       }
     }
     this.running=false;
