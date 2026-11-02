@@ -41,6 +41,7 @@ class DesktopLauncherContracts(unittest.TestCase):
             # --health-check owns the service, so its recorded state file must
             # already be gone after a clean stop.
             self.assertFalse((data / 'launcher-server.json').exists())
+            self.assertTrue((data / 'logs' / 'server.log').is_file())
 
     def test_stop_refuses_a_state_file_from_another_data_directory(self):
         if not RUNTIME.is_file():

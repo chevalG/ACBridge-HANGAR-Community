@@ -602,8 +602,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
 
     const std::wstring root = ExecutableDirectory();
     const std::wstring local = KnownFolder(FOLDERID_LocalAppData);
-    g_state.data_dir = local.empty() ? Join(root, L"data") :
-        Join(Join(Join(local, L"ACBridge"), L"HANGAR"), L"data");
+    const std::wstring override = EnvironmentValue(L"HANGAR_DATA");
+    g_state.data_dir = !override.empty() ? override :
+        (local.empty() ? Join(root, L"data") :
+         Join(Join(Join(local, L"ACBridge"), L"HANGAR"), L"data"));
     EnsureDirectory(g_state.data_dir);
 
     if (health_only) {
