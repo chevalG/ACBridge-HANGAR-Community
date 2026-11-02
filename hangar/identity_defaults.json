@@ -1,0 +1,165 @@
+{
+  "schema": "h20-identity-defaults-1",
+  "seed_note": "Only identities with source or existing project metadata are seeded. Every other resource ID stays pending until a user edits it.",
+  "identities": [
+    {
+      "resource_id": "C4200",
+      "kind": "enemy",
+      "names": {
+        "zh": "艾尔",
+        "en": "IB-07: SOL 644"
+      },
+      "aliases": [
+        "SOL 644",
+        "Ayre",
+        "IB-07"
+      ],
+      "missions": [],
+      "tags": [
+        "boss"
+      ],
+      "notes": "H06 核对身份为 IB-07: SOL 644 / Ayre；DYNAMIC model-space，mesh 9 是 C[c4200]_Laser_B 战斗激光束，静态预览时排除。",
+      "source_refs": [
+        {
+          "label": "H06 资源核对",
+          "path": "docs/H06-ASSET-RECON.md",
+          "note": "身份表：IB-07: SOL 644 / Ayre；DYNAMIC model-space 与光束排除"
+        },
+        {
+          "label": "馆藏名称索引",
+          "path": "hangar/library.py",
+          "note": "NAMES：IB-07: SOL 644 · 艾尔"
+        }
+      ]
+    },
+    {
+      "resource_id": "C4201",
+      "kind": "enemy",
+      "names": {
+        "zh": "ALLMIND",
+        "en": "SOL 644"
+      },
+      "aliases": [
+        "ALLMIND",
+        "SOL 644"
+      ],
+      "missions": [],
+      "tags": [
+        "boss"
+      ],
+      "notes": "身份证据是 T20-B 精确提取与技能引用；original/boss-allmind 是玩家部件打造的 ALLMIND 风格整机，不是 c4201 几何证据。",
+      "source_refs": [
+        {
+          "label": "H06 资源核对",
+          "path": "docs/H06-ASSET-RECON.md",
+          "note": "ALLMIND / SOL 644；NON_DYNAMIC，逐网格默认骨"
+        },
+        {
+          "label": "H06-QF C4201",
+          "path": "docs/H06-QF-C4201.md",
+          "note": "ALLMIND SOL 644 来源组合修复记录"
+        }
+      ]
+    },
+    {
+      "resource_id": "C4250",
+      "kind": "enemy",
+      "names": {
+        "en": "IB-01: CEL 240"
+      },
+      "aliases": [
+        "CEL 240",
+        "IB-01"
+      ],
+      "missions": [],
+      "tags": [
+        "boss"
+      ],
+      "notes": "NON_DYNAMIC、无权重，按逐网格默认骨放置；源为 /chr/c4250.chrbnd.dcx。中文名尚无来源，保持待补。",
+      "source_refs": [
+        {
+          "label": "H06 资源核对",
+          "path": "docs/H06-ASSET-RECON.md",
+          "note": "IB-01: CEL 240；NON_DYNAMIC，逐网格默认骨"
+        }
+      ]
+    },
+    {
+      "resource_id": "C6100",
+      "kind": "enemy",
+      "names": {
+        "zh": "海蜘蛛",
+        "en": "SEA SPIDER"
+      },
+      "aliases": [
+        "IA-13: SEA SPIDER (ALLMIND)"
+      ],
+      "missions": [
+        "第二章 Ocean Crossing",
+        "ALLMIND Coral Release"
+      ],
+      "tags": [
+        "boss"
+      ],
+      "notes": "第二章与 ALLMIND 战共用 c6100 主体；NPC 配置、显示掩码、材质覆盖与动画偏移不同。c6101 是独立炮塔资源，不能替代 c6100。",
+      "source_refs": [
+        {
+          "label": "H09-S 双版本身份",
+          "path": "docs/H09-S-IDENTITY.md",
+          "note": "两章地图、NpcParam、显示掩码与 IA-13 材质覆盖名"
+        },
+        {
+          "label": "H06 资源核对",
+          "path": "docs/H06-ASSET-RECON.md",
+          "note": "SEA SPIDER；逐顶点 NORMAL.w 刚性骨 ID"
+        }
+      ]
+    },
+    {
+      "resource_id": "C6400",
+      "kind": "enemy",
+      "names": {
+        "zh": "阔步者",
+        "en": "STRIDER"
+      },
+      "aliases": [
+        "武装开采舰",
+        "Weaponized Mining Ship STRIDER"
+      ],
+      "tags": [
+        "boss",
+        "复合装配"
+      ],
+      "notes": "C6400 主体与三个 C6410 钻柱的组合有 FLVER Dummy 与原骨名依据。C6420 的机械连接和游戏同步仍未证实，不能从身份关联推导连接。",
+      "source_refs": [
+        {
+          "label": "H16 阔步者资源与装配证据",
+          "path": "docs/H16-WALKER-RESTORATION.md",
+          "note": "用户确认 H16 任务中的 C6400 阔步者主体身份；组件证据亦见 hangar/npc_profiles.json"
+        }
+      ]
+    },
+    {
+      "resource_id": "C6410",
+      "kind": "enemy",
+      "names": {
+        "zh": "阔步者钻柱组件",
+        "en": "STRIDER drill-column component"
+      },
+      "aliases": [
+        "drill-column"
+      ],
+      "tags": [
+        "组件"
+      ],
+      "notes": "资源组件说明名，非独立 Boss 名称。C6400 的三个挂点与 Add_parts_A/B/C 骨名匹配；连接关系仅限已记录组合。",
+      "source_refs": [
+        {
+          "label": "原骨名及 Dummy 关联",
+          "path": "hangar/npc_profiles.json",
+          "note": "C6400 components references 223/224/225 and matching C6410 rig"
+        }
+      ]
+    }
+  ]
+}

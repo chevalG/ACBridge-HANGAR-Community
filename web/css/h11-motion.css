@@ -1,0 +1,242 @@
+/* ACBridge HANGAR · H11 原版动作浏览器 (自由/严格模式 + 可搜索全量动作列表)
+ * 仅覆盖 H11 动作浏览模块；不改动 H07 摄影 / H08 FXR / H05 导出样式。
+ */
+
+.h13-motion-pages { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:11px; }
+.h13-motion-pages button { padding:5px; background:var(--c-slate-surface); color:var(--c-porcelain); border:1px solid var(--c-slate-border); cursor:pointer; }
+.h13-motion-pages button:disabled { opacity:.4; cursor:default; }
+.h13-motion-pages input { width:42px; background:var(--bg-input); color:var(--c-porcelain); border:1px solid var(--c-slate-border); }
+.feature-module { border:1px solid var(--c-slate-border); border-radius:4px; margin:7px 0; font-size:11px; }
+.feature-module > summary { padding:9px; cursor:pointer; font-weight:600; }
+.feature-status { float:right; font-weight:400; color:var(--c-copper-bright); }
+.feature-body { padding:0 8px 8px; line-height:1.5; overflow-wrap:anywhere; }
+.feature-body .inspector-card { margin:5px 0; }
+.feature-body pre { font-size:10px; white-space:pre-wrap; }
+.material-fact { margin:8px 0; padding:6px; border-bottom:1px solid var(--c-slate-border); }
+.feature-error { color:var(--c-copper-bright); }
+#clips-list-container { max-height:440px; overflow:auto; }
+#right-panel .catalog-toolbar { display:flex; flex-direction:column; gap:6px; }
+#right-panel .catalog-filter-options { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+#right-panel .catalog-filter-options select { flex:1 1 90px; min-width:0; max-width:100%; }
+#right-panel .catalog-filter-options label { white-space:nowrap; flex:1 1 125px; }
+#right-panel .clips-selection-bar { flex-wrap:wrap; gap:6px; }
+
+/* 请求模式与显示模式状态行 */
+.h11-mode-state {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--c-porcelain-muted);
+  margin: 2px 0 8px;
+}
+.h11-mode-state b {
+  color: var(--c-ice-bright);
+  font-family: var(--font-mono);
+}
+.h11-mode-state .h11-mode-warn {
+  color: var(--c-copper-bright);
+}
+
+/* 动作浏览器容器 */
+.h11-motion-browser {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.h11-motion-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.h11-motion-filter-row {
+  display: flex;
+  gap: 6px;
+}
+.h11-motion-filter-row select {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  padding: 4px 6px;
+}
+.h11-motion-count {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--c-porcelain-muted);
+}
+
+/* 动作条目列表：限高分页滚动，避免 200+ 条目一次性铺满 DOM */
+.h11-motion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 440px;
+  overflow-y: auto;
+  border: 1px solid var(--c-slate-border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  background: var(--bg-input);
+  contain: content;
+}
+
+/* 单个动作条目 (始终可点击，含无法解析/叠加条目) */
+.h11-motion-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 7px;
+  border: 1px solid var(--c-slate-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-slate-surface);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.h11-motion-item:hover {
+  border-color: var(--c-ice-dim);
+  background: var(--c-slate-card-hover);
+}
+.h11-motion-item:focus-visible {
+  outline: 1px solid var(--c-ice);
+  outline-offset: 1px;
+}
+.h11-motion-item.active {
+  border-color: var(--c-copper);
+  background: var(--c-copper-subtle);
+}
+
+.h11-motion-item-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.h11-motion-id {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-ice-bright);
+}
+.h11-motion-name {
+  font-size: 11px;
+  color: var(--c-porcelain);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.h11-motion-labels {
+  font-size: 10px;
+  color: var(--c-copper-bright);
+}
+
+.h11-motion-item-meta,
+.h11-motion-item-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.h11-chip {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  border: 1px solid var(--c-slate-border-light);
+  color: var(--c-porcelain-dim);
+  white-space: nowrap;
+}
+.h11-chip.additive {
+  color: var(--c-copper-bright);
+  border-color: var(--c-copper-dim);
+}
+.h11-chip.normal {
+  color: var(--c-ice);
+}
+.h11-chip.binding.bad {
+  color: var(--c-danger);
+  border-color: var(--c-danger);
+}
+
+.h11-status {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  padding: 1px 5px;
+  border-radius: 8px;
+  white-space: nowrap;
+  cursor: help;
+}
+.h11-status.st-untested {
+  color: var(--c-porcelain-dim);
+  border: 1px solid var(--c-slate-border-light);
+}
+.h11-status.st-playable {
+  color: var(--c-success);
+  border: 1px solid var(--c-success);
+}
+.h11-status.st-approximate {
+  color: var(--c-ice-bright);
+  border: 1px solid var(--c-ice-dim);
+}
+.h11-status.st-needs-composition {
+  color: var(--c-copper-bright);
+  border: 1px solid var(--c-copper-dim);
+}
+.h11-status.st-unparseable {
+  color: var(--c-danger);
+  border: 1px solid var(--c-danger);
+}
+
+/* 折叠诊断 (点击展开不会触发条目载入) */
+.h11-motion-diag {
+  font-size: 10px;
+  color: var(--c-porcelain-muted);
+}
+.h11-motion-diag summary {
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--c-porcelain-muted);
+}
+.h11-motion-diag summary:hover {
+  color: var(--c-ice);
+}
+.h11-motion-reason {
+  margin: 4px 0 0;
+  line-height: 1.5;
+  color: var(--c-porcelain-dim);
+}
+.h11-motion-reason.note {
+  color: var(--c-copper-bright);
+}
+.h11-motion-raw {
+  margin: 4px 0 0;
+  padding: 4px;
+  max-height: 120px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--c-porcelain-muted);
+  background: var(--c-slate-deep);
+  border-radius: var(--radius-sm);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* 分页与空态 */
+.h11-motion-more {
+  font-size: 10px;
+  padding: 5px 8px;
+  border: 1px dashed var(--c-slate-border-light);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--c-ice);
+  cursor: pointer;
+}
+.h11-motion-more:hover {
+  border-color: var(--c-ice);
+  background: var(--c-ice-subtle);
+}
+.h11-motion-empty {
+  padding: 14px 8px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--c-porcelain-muted);
+}

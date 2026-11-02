@@ -1,0 +1,4 @@
+# The H02 overlay manifest hashes exact source bytes on every platform.
+engine-src/** -text
+# Preserve inherited upstream FLVER whitespace because its exact bytes are hashed.
+engine-src/acbridge/vendor/t47/vendor/flver_parser/flver.py whitespace=-blank-at-eol

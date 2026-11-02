@@ -1,0 +1,15 @@
+{
+  "C6100": {
+    "title": "版本、形态与行为调用研究",
+    "notes": ["第二章与 ALLMIND 战共用 c6100 主体；NPC 配置、显示掩码、材质覆盖与动画偏移不同。此处不模拟出生逻辑、不冒充已还原 ALLMIND 涂装。c6101 独立实体的运行时关联仍未重建。"],
+    "boundary": "折叠、展开等名称为原始骨轨与 GUI 观测；阶段切换、IK、炮塔和特效未完整复原。按钮沿用上方自由／严格模式。",
+    "sources": ["docs/H09-S-IDENTITY.md", "docs/H09-S-MOTION-MATRIX.md", "docs/H09-S-ACCEPTANCE.md"],
+    "observations": {
+      "0d3053e1aa2280879dab7bafb6bc59ed52aa80537db5ee2f78a721c907112533": "支撑姿态 · 第二章 TAE 1111 导入此 HKX",
+      "6cd6fe1410e083ac5c8ad38427e12638daa1fb4d3bebd04fdd87a295fbee075a": "下降动作 · 第二章 EMEVD 3935 有强制播放调用",
+      "a6abdd0d4dce00a863720fed2df1739a2ca87e6478970a0ea131b3a1c7ec450d": "机构折叠候选 · 完整运行时转换未验证",
+      "9dbf138719639079a363963a43a6d8d7eeeac5932ef82360a93dbafa6f25ecab": "展开姿态运动 · 游戏具体用途未知",
+      "4a335b42746ffb884edd4019ec8ebae432ab66c801930d452ed189bedb3b1c0d": "展开机构旋转 · 游戏具体用途未知"
+    }
+  }
+}

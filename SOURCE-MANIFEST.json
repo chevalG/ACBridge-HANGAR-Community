@@ -1,0 +1,60 @@
+{
+  "product": "ACBridge HANGAR",
+  "version": "3.1.1",
+  "license": "GPL-3.0-only",
+  "repository": "https://github.com/chevalG/ACBridge-HANGAR-Community",
+  "components": [
+    {
+      "name": "ACBridge HANGAR",
+      "source": "repository tag v3.1.1",
+      "license": "GPL-3.0-only"
+    },
+    {
+      "name": "ACBridge Toolkit frozen base",
+      "version": "0.5.1a5",
+      "archive": "licenses/acbridge_toolkit-0.5.1a5.tar.gz",
+      "license": "GPL-3.0-only"
+    },
+    {
+      "name": "Nuxe",
+      "revision": "16d94fcd379f45721047a0c2b7b743e84b4fa08b",
+      "source": "https://github.com/JKAnderson/Nuxe/tree/16d94fcd379f45721047a0c2b7b743e84b4fa08b",
+      "archive": "licenses/Nuxe-1.2.1-source.tar.gz",
+      "license": "GPL-3.0-or-later"
+    },
+    {
+      "name": "Coremats",
+      "revision": "a315f5bf7569945cbbd39fb902718de765dba4c4",
+      "source": "https://github.com/JKAnderson/Coremats/tree/a315f5bf7569945cbbd39fb902718de765dba4c4",
+      "archive": "licenses/Coremats-a315f5bf-source.tar.gz",
+      "license": "GPL-3.0-or-later"
+    },
+    {
+      "name": "Bex",
+      "revision": "bb1ade180a72465f89103880f4f5bef500e64236",
+      "source": "https://github.com/JKAnderson/Bex/tree/bb1ade180a72465f89103880f4f5bef500e64236",
+      "archive": "licenses/Bex-bb1ade18-source.tar.gz",
+      "license": "GPL-3.0-or-later"
+    },
+    {
+      "name": "NuxeBridge",
+      "version": "1.0.0",
+      "source": "third_party/nuxebridge",
+      "archive": "licenses/NuxeBridge-1.0.0-source.tar.gz",
+      "license": "GPL-3.0-only"
+    },
+    {
+      "name": "BinderKeys AC6 data",
+      "revision": "b95a32c509e35e5b18306c1d37a7778ea4034f38",
+      "source": "https://github.com/JKAnderson/BinderKeys/tree/b95a32c509e35e5b18306c1d37a7778ea4034f38",
+      "license": "Apache-2.0"
+    },
+    {
+      "name": "WitchyBND",
+      "version": "3.0.1.0",
+      "redistributed": false,
+      "source": "https://github.com/ividyon/WitchyBND/releases/tag/3.0.1.0",
+      "license": "Upstream distribution terms"
+    }
+  ]
+}

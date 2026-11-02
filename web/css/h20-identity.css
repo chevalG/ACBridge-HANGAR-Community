@@ -1,0 +1,176 @@
+/* H20 · 馆藏身份卡片（紧凑、可选展开；复用 H06 检视器配色与字号） */
+.identity-card {
+  gap: 0;
+  padding: 8px 10px;
+}
+
+.identity-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+  min-width: 0;
+}
+
+.identity-summary::-webkit-details-marker {
+  display: none;
+}
+
+.identity-title {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--c-porcelain-dim);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.identity-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.identity-badge.known {
+  color: var(--c-success);
+  border: 1px solid var(--c-success);
+  background: rgba(120, 194, 173, 0.14);
+}
+
+.identity-badge.pending {
+  color: var(--c-copper-bright);
+  border: 1px solid var(--c-copper-dim);
+  background: var(--c-copper-subtle);
+}
+
+.identity-display {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-porcelain-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.identity-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  font-family: var(--font-ui);
+}
+
+.identity-chip {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: var(--c-ice);
+  border: 1px solid var(--c-slate-border-light);
+  background: var(--c-ice-subtle);
+}
+
+.identity-note {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--c-porcelain-dim);
+  border-left: 2px solid var(--c-slate-border-light);
+  padding-left: 7px;
+}
+
+.identity-refs {
+  font-size: 9px;
+  line-height: 1.45;
+  font-family: var(--font-mono);
+  color: var(--c-porcelain-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.identity-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.identity-actions .btn-mini {
+  background: var(--c-slate-surface);
+  border: 1px solid var(--c-slate-border-light);
+  color: var(--c-ice);
+  font-size: 10px;
+  padding: 4px 9px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.identity-actions .btn-mini:hover:not(:disabled) {
+  border-color: var(--c-ice);
+  color: var(--c-porcelain);
+}
+
+.identity-actions .btn-mini:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.identity-actions .identity-save {
+  border-color: var(--c-copper);
+  color: var(--c-copper-bright);
+  background: var(--c-copper-subtle);
+}
+
+.identity-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.identity-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--c-porcelain-muted);
+}
+
+.identity-field input,
+.identity-field textarea {
+  width: 100%;
+  background: var(--c-slate-surface);
+  border: 1px solid var(--c-slate-border);
+  border-radius: 3px;
+  color: var(--c-porcelain);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 7px;
+  outline: none;
+  resize: vertical;
+}
+
+.identity-field input:focus,
+.identity-field textarea:focus {
+  border-color: var(--c-copper);
+}
+
+.asset-card-identity {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--c-copper-bright);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+}

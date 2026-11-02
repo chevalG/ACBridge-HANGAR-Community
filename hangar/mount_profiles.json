@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "source": "T49 EquipParamWeapon -> WepAbsorpPosParam -> body FLVER Dummy; no Weapon Bay rail inference",
+  "profiles": {
+    "WP_R_1610": {
+      "source_sha256": "924f1f75338613e8352631d6f6fe08795d14ecf962547cc9b7fa517850961ee8",
+      "equip_param_id": "10000000",
+      "absorp_param_id": "100",
+      "slots": {
+        "right_hand": 3020
+      },
+      "basis": "T49 parameter + FLVER Dummy technical verification; player visual acceptance pending"
+    },
+    "WP_L_1610": {
+      "source_sha256": "0e6985538674a2c5eee535cdd52e7a5112587974c9cf156f5d40fa0b06147972",
+      "equip_param_id": "15000000",
+      "absorp_param_id": "100",
+      "slots": {
+        "left_hand": 3023
+      },
+      "basis": "T49 parameter + FLVER Dummy technical verification; player visual acceptance pending"
+    },
+    "WP_R_1510": {
+      "source_sha256": "2521b7a8ca510769ea59c4a22466ef9d264f4b4e1e06323cb04e94b0e690fe48",
+      "equip_param_id": "10050000",
+      "absorp_param_id": "100",
+      "slots": {
+        "right_hand": 3020
+      },
+      "basis": "T49 parameter + FLVER Dummy technical verification; player visual acceptance pending"
+    },
+    "WP_L_0411": {
+      "source_sha256": "3e544d55d34b282c89ff3d0e962741434dcb3cdaf60bb8bad694acabb2e7f465",
+      "equip_param_id": "20030000",
+      "absorp_param_id": "200",
+      "slots": {
+        "left_hand": 3025
+      },
+      "basis": "T49 parameter + FLVER Dummy technical verification; player visual acceptance pending"
+    },
+    "WP_R_4250": {
+      "source_sha256": "e4e701e48d6488f7e81a961dd3b81b1d1dd38abac2bd32879e9769c7f4eb0b2c",
+      "equip_param_id": "30040000",
+      "absorp_param_id": "300",
+      "slots": {
+        "right_back": 2014
+      },
+      "basis": "T49 parameter + FLVER Dummy technical verification; player visual acceptance pending"
+    },
+    "WP_L_4250": {
+      "source_sha256": "7ee5f156e34c7ed775b3069e8348d7333b2ef599494ce163b42056357c8f1c7a",
+      "equip_param_id": "35040000",
+      "absorp_param_id": "300",
+      "slots": {
+        "left_back": 2013
+      },
+      "basis": "T49 parameter + FLVER Dummy technical verification; player visual acceptance pending"
+    }
+  }
+}

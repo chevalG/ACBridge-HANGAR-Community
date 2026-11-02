@@ -1,0 +1,30 @@
+runtime/
+data/
+evidence/
+release/
+release-inputs/
+pip/
+__pycache__/
+*.pyc
+web/vendor/
+third_party/nuxebridge/bin/
+third_party/nuxebridge/obj/
+# Original/extracted game assets and generated model files stay local even if
+# accidentally dropped outside data/. Ignore rules do not replace history audit.
+*.flver
+*.hkx
+*.compendium
+*.tpf
+*.dcx
+*.dds
+*.matbin
+*.glb
+*.gltf
+*.fxr
+*.ffxreslist
+*.tae
+*.bhv
+*.sib
+*.anibnd
+*.partsbnd
+

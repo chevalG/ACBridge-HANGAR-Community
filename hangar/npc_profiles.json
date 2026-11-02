@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "profiles": {
+    "C6400": {
+      "source_sha256": "a8af7e5b5e556c6eda4d5a87bdc5ab43d3d6bc88ccf5073565be9479ba86b3b0",
+      "basis": "C6400 FLVER has three body_01/02/03_drill_dmy entries (Dummy refs 223/224/225); each is aligned to a separate Add_parts_A/B/C drill rig. C6410 carries the matching single unprefixed drill rig. Dynamic matching is limited to exact Add_parts prefix names; unmatched source bones remain on the original model root and are listed in the conversion proof.",
+      "components": [
+        {
+          "resource_id": "C6410",
+          "role": "drill-column · body_01 / Add_parts_A",
+          "sha256": "78e02643a686f80f64944f734ff0da919d02e0b78e07d3a06d279bc88d6eef1a",
+          "reference": 223,
+          "bone_prefix": "Add_parts_A_"
+        },
+        {
+          "resource_id": "C6410",
+          "role": "drill-column · body_02 / Add_parts_B",
+          "sha256": "78e02643a686f80f64944f734ff0da919d02e0b78e07d3a06d279bc88d6eef1a",
+          "reference": 224,
+          "bone_prefix": "Add_parts_B_"
+        },
+        {
+          "resource_id": "C6410",
+          "role": "drill-column · body_03 / Add_parts_C",
+          "sha256": "78e02643a686f80f64944f734ff0da919d02e0b78e07d3a06d279bc88d6eef1a",
+          "reference": 225,
+          "bone_prefix": "Add_parts_C_"
+        }
+      ],
+      "scene_compositions": [
+        {
+          "id": "m01_01_40_00",
+          "map": "m01_01_40_00",
+          "label": "m01_01_40_00 · 同图摆放",
+          "basis": "Original MSB lists C6400 Entity 201 / NPCParam 64000000 and C6420 Entity 210 / NPCParam 64200000 in Parts.Enemies. They are separate map actors. Their transforms are preserved as a composition candidate; no mechanical attachment or synchronized game event has been proven.",
+          "body": {
+            "position": [
+              -4109.295,
+              0.0,
+              0.0
+            ],
+            "rotation_deg": [
+              0.0,
+              -90.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "entity_id": 201,
+            "npc_param_id": 64000000
+          },
+          "actors": [
+            {
+              "resource_id": "C6420",
+              "role": "STRIDER Eye",
+              "position": [
+                -5482.496,
+                6.415,
+                -815.458
+              ],
+              "rotation_deg": [
+                -4.552,
+                -0.09,
+                -2.274
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "entity_id": 210,
+              "npc_param_id": 64200000
+            }
+          ]
+        },
+        {
+          "id": "m01_08_70_00",
+          "map": "m01_08_70_00",
+          "label": "m01_08_70_00 · 同图摆放",
+          "basis": "Original MSB lists C6400 Entity 300 / NPCParam 64001000 and C6420 Entity 210 / NPCParam 64200000 in Parts.Enemies. They are separate map actors. Their transforms are preserved as a composition candidate; no mechanical attachment or synchronized game event has been proven.",
+          "body": {
+            "position": [
+              515.745,
+              0.015,
+              1971.244
+            ],
+            "rotation_deg": [
+              0.0,
+              -40.041,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "entity_id": 300,
+            "npc_param_id": 64001000
+          },
+          "actors": [
+            {
+              "resource_id": "C6420",
+              "role": "STRIDER Eye",
+              "position": [
+                2894.426,
+                0.015,
+                653.823
+              ],
+              "rotation_deg": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "scale": [
+                1.0,
+                1.0,
+                1.0
+              ],
+              "entity_id": 210,
+              "npc_param_id": 64200000
+            }
+          ]
+        }
+      ]
+    },
+    "C4201": {
+      "source_sha256": "5da4d784b9448efd1479a65c1a2d1456cb8cd3dafafd7ee8324a79eae1fc410b",
+      "basis": "NpcParam 42010000 equipWeaponPresetId -> NpcEquipPartsParam 42010000 weaponId3=5553 weaponDmyId3=355 -> wp_e_5553.partsbnd.dcx -> WP_E_5553.flver",
+      "components": [
+        {
+          "resource_id": "WP_E_5553",
+          "role": "head",
+          "sha256": "2cdd80f26bfae15f41bba6d42a0507cbbb4c510e656373c235b2150519a47c1d",
+          "reference": 355
+        }
+      ]
+    }
+  }
+}
