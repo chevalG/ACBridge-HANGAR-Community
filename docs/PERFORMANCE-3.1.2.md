@@ -4,7 +4,7 @@ Measured on the clean extracted candidate, Windows 11 x64, warm disk cache.
 
 | Metric | Observed |
 |---|---|
-| Launcher to service state file | ~1.1 s |
+| Launcher to service state file | ~1.1-1.2 s |
 | HANGAR.exe working set (window open) | ~60 MB |
 | HANGAR.exe private memory | ~38 MB |
 | Python service working set | ~32 MB |

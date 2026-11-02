@@ -12,7 +12,7 @@ ACBridge HANGAR 是一个面向《装甲核心 VI：境界天火》的本地机�
 
 ## Download and first run / 下载与首次运行
 
-1. Download and fully extract `ACBridge-HANGAR-H24-r11-Windows-x64.zip`.
+1. Download and fully extract `ACBridge-HANGAR-H24-r12-Windows-x64.zip`.
 2. Double-click `HANGAR.exe`. No command prompt is required.
 3. If the import wizard reports missing game tools, use **一键安装缺失组件**.
    It reuses the bundled Nuxe stack, obtains WitchyBND from its official GitHub
