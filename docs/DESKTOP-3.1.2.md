@@ -19,6 +19,9 @@ Edge WebView2 Runtime already installed by Windows or Edge.
   not the primary shutdown mechanism.
 - The service writes `launcher-server.json` after binding loopback; the
   launcher waits for that record rather than scraping an unrelated port.
+- If a healthy service for the same data directory was started manually (for
+  example with `START.cmd`), the launcher reuses it without taking ownership.
+  Closing HANGAR then leaves that manual service running.
 - On `WM_CLOSE`, the launcher closes WebView2, runs the bundled `stop.py` for
   the same data directory, waits for the owned process, then closes the job.
 - It never calls `taskkill` by process name and never searches for generic

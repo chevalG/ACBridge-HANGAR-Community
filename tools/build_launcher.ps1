@@ -35,7 +35,7 @@ $commands = @(
     ('"' + $rc + '" /nologo /fo "' + $res + '" HangarLauncher.rc'),
     ('link /nologo /SUBSYSTEM:WINDOWS /OUT:"' + $Output + '" "' + $obj + '" "' + $res +
         '" "' + (Join-Path $webview 'x64\WebView2LoaderStatic.lib') +
-        '" user32.lib gdi32.lib shell32.lib ole32.lib oleaut32.lib advapi32.lib shlwapi.lib')
+        '" user32.lib gdi32.lib shell32.lib ole32.lib oleaut32.lib advapi32.lib shlwapi.lib winhttp.lib')
 )
 $cmd = $commands -join " && "
 cmd.exe /d /s /c $cmd

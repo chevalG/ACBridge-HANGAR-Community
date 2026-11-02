@@ -10,6 +10,7 @@
 #include <shellapi.h>
 #include <wrl.h>
 #include <WebView2.h>
+#include <winhttp.h>
 
 #include <algorithm>
 #include <chrono>
@@ -40,6 +41,7 @@ struct WindowState {
     HANDLE activate_event = nullptr;
     HANDLE single_instance = nullptr;
     bool service_started = false;
+    bool reused_service = false;
     bool shutting_down = false;
     bool webview_ready = false;
     bool webview_failed = false;
@@ -91,6 +93,149 @@ std::wstring EnvironmentValue(const wchar_t* name) {
     }
     value.resize(size - 1);
     return value;
+}
+
+std::string HttpGet(const std::wstring& host, int port, const wchar_t* path) {
+    HINTERNET session = WinHttpOpen(L"HANGAR-Health/1.0",
+                                    WINHTTP_ACCESS_TYPE_NO_PROXY,
+                                    WINHTTP_NO_PROXY_NAME,
+                                    WINHTTP_NO_PROXY_BYPASS, 0);
+    if (!session) {
+        return {};
+    }
+    WinHttpSetTimeouts(session, 2000, 2000, 2000, 2000);
+    HINTERNET connection = WinHttpConnect(session, host.c_str(),
+                                          static_cast<INTERNET_PORT>(port), 0);
+    if (!connection) {
+        WinHttpCloseHandle(session);
+        return {};
+    }
+    HINTERNET request = WinHttpOpenRequest(connection, L"GET", path, nullptr,
+                                           WINHTTP_NO_REFERER,
+                                           WINHTTP_DEFAULT_ACCEPT_TYPES, 0);
+    if (!request) {
+        WinHttpCloseHandle(connection);
+        WinHttpCloseHandle(session);
+        return {};
+    }
+    std::string body;
+    if (WinHttpSendRequest(request, WINHTTP_NO_ADDITIONAL_HEADERS, 0,
+                           WINHTTP_NO_REQUEST_DATA, 0, 0, 0) &&
+        WinHttpReceiveResponse(request, nullptr)) {
+        DWORD available = 0;
+        do {
+            available = 0;
+            WinHttpQueryDataAvailable(request, &available);
+            if (available == 0) {
+                break;
+            }
+            std::vector<char> chunk(std::min<DWORD>(available, 4096));
+            DWORD read = 0;
+            if (!WinHttpReadData(request, chunk.data(),
+                                 static_cast<DWORD>(chunk.size()), &read)) {
+                break;
+            }
+            body.append(chunk.data(), read);
+            if (body.size() > 8192) {
+                break;
+            }
+        } while (available > 0);
+    }
+    WinHttpCloseHandle(request);
+    WinHttpCloseHandle(connection);
+    WinHttpCloseHandle(session);
+    return body;
+}
+
+std::wstring JsonString(const std::string& body, const char* key) {
+    const std::string needle = std::string("\"") + key + "\": \"";
+    const size_t start = body.find(needle);
+    if (start == std::string::npos) {
+        return {};
+    }
+    size_t at = start + needle.size();
+    std::wstring value;
+    while (at < body.size() && body[at] != '"') {
+        if (body[at] == '\\' && at + 1 < body.size()) {
+            ++at;
+            if (body[at] == '\\' || body[at] == '"') {
+                value.push_back(static_cast<wchar_t>(body[at]));
+            }
+        } else {
+            value.push_back(static_cast<wchar_t>(body[at]));
+        }
+        ++at;
+    }
+    return value;
+}
+
+int JsonInt(const std::string& body, const char* key) {
+    const std::string needle = std::string("\"") + key + "\": ";
+    const size_t start = body.find(needle);
+    if (start == std::string::npos) {
+        return 0;
+    }
+    return std::atoi(body.c_str() + start + needle.size());
+}
+
+bool ProbeExistingService(const std::wstring& data_dir, std::wstring& url) {
+    const std::wstring state_path = Join(data_dir, L"launcher-server.json");
+    HANDLE file = CreateFileW(state_path.c_str(), GENERIC_READ,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                              OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (!file) {
+        return false;
+    }
+    DWORD size = GetFileSize(file, nullptr);
+    std::string body;
+    if (size > 0 && size < 4096) {
+        body.resize(size);
+        DWORD read = 0;
+        if (ReadFile(file, body.data(), size, &read, nullptr)) {
+            body.resize(read);
+        }
+    }
+    CloseHandle(file);
+    const int port = JsonInt(body, "port");
+    const int pid = JsonInt(body, "pid");
+    const std::wstring recorded = JsonString(body, "data_dir");
+    if (port <= 0 || pid <= 0 || recorded.empty()) {
+        return false;
+    }
+    const std::wstring recorded_resolved = [&] {
+        wchar_t buffer[MAX_PATH * 4]{};
+        if (GetFullPathNameW(recorded.c_str(), static_cast<DWORD>(std::size(buffer)),
+                             buffer, nullptr) == 0) {
+            return recorded;
+        }
+        return std::wstring(buffer);
+    }();
+    const std::wstring data_resolved = [&] {
+        wchar_t buffer[MAX_PATH * 4]{};
+        if (GetFullPathNameW(data_dir.c_str(), static_cast<DWORD>(std::size(buffer)),
+                             buffer, nullptr) == 0) {
+            return data_dir;
+        }
+        return std::wstring(buffer);
+    }();
+    if (_wcsicmp(recorded_resolved.c_str(), data_resolved.c_str()) != 0) {
+        return false;
+    }
+    HANDLE process = OpenProcess(SYNCHRONIZE, FALSE, static_cast<DWORD>(pid));
+    if (!process) {
+        return false;
+    }
+    const bool alive = WaitForSingleObject(process, 0) == WAIT_TIMEOUT;
+    CloseHandle(process);
+    if (!alive) {
+        return false;
+    }
+    const std::string health = HttpGet(L"127.0.0.1", port, L"/api/health");
+    if (health.find("\"ok\": true") == std::string::npos) {
+        return false;
+    }
+    url = L"http://127.0.0.1:" + std::to_wstring(port) + L"/";
+    return true;
 }
 
 void SetEnvironmentValue(const wchar_t* name, const std::wstring& value) {
@@ -173,6 +318,13 @@ bool StartOwnedService(const std::wstring& root, const std::wstring& data_dir,
         return false;
     }
     EnsureDirectory(data_dir);
+    // If the user already started this installation manually (START.cmd) for
+    // the same data directory, reuse it and do not claim its lifecycle. Closing
+    // the HANGAR window must not stop a service the launcher did not create.
+    if (ProbeExistingService(data_dir, url)) {
+        g_state.reused_service = true;
+        return true;
+    }
     const std::wstring state_path = Join(data_dir, L"launcher-server.json");
     DeleteFileW(state_path.c_str());
     const std::wstring log_path = Join(data_dir, L"server.log");
@@ -337,6 +489,10 @@ void DestroyWebView() {
 }
 
 void ShutdownOwnedService() {
+    if (g_state.reused_service) {
+        g_state.reused_service = false;
+        return;
+    }
     if (!g_state.service_started || !g_state.service.hProcess) {
         return;
     }

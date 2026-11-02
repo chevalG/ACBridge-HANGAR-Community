@@ -25,6 +25,8 @@ inputs from the published 3.1.1 build. No private research history was used.
 - A second install request completed as "already ready" without re-downloading.
 - Closing the window stopped HANGAR.exe, its owned Python service and the
   WebView2 process tree; no state marker was left behind.
+- A manually started service for the same data directory was reused; closing
+  HANGAR left that manual service running and healthy.
 - Second launch exited immediately and re-activated the existing window; the
   service port stayed unchanged.
 - Existing `settings.json` was preserved across restart.

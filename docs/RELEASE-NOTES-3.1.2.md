@@ -18,6 +18,8 @@ does not add AC6 reverse-engineering features.
 - Closing the HANGAR window stops the exact service process started by that
   window, including its child processes, then exits the desktop shell.
 - The launcher does not enumerate or terminate unrelated Python processes.
+- A healthy service already running for the same data directory is reused and
+  is not stopped by closing the HANGAR window.
 - Shutdown is graceful: queued jobs are cancelled, running work is asked to
   stop, and the job pool is waited on before exit. A job-object fallback only
   applies to the launcher's own child tree.
