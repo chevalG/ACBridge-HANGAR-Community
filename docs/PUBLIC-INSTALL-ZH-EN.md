@@ -18,6 +18,8 @@
 3. In the import wizard, use **一键安装缺失组件** if the toolchain is missing.
    The assistant reuses installed components, downloads WitchyBND only from its
    official GitHub release, verifies the pinned SHA-256, and rechecks .NET.
+   For KRAK-compressed parts, also use **从 AC6 目录复用 Oodle** to copy
+   `oo2core_8_win64.dll` from your own AC6 installation.
 4. If **Microsoft .NET 10 Desktop Runtime (x64)** is still missing, install it
    from <https://dotnet.microsoft.com/download/dotnet/10.0>, then retry.
 5. Choose **Game Root** and select the AC6 installation folder or its `Game`
@@ -48,6 +50,8 @@ folder does not remove that profile automatically.
 2. 双击 `HANGAR.exe`。程序会启动本地服务并打开专属窗口，无需接触 CMD。
 3. 若导入向导提示组件缺失，点击 **一键安装缺失组件**。助手会复用已有组件，
    仅从 WitchyBND 官方 GitHub Release 下载，校验固定 SHA-256，并重新检测 .NET。
+   对于 KRAK 压缩的部件包，请再点击 **从 AC6 目录复用 Oodle**，从你合法安装的
+   AC6 目录复制 `oo2core_8_win64.dll`。
 4. 若仍缺少 **Microsoft .NET 10 Desktop Runtime (x64)**，请安装
    [官方运行时](https://dotnet.microsoft.com/download/dotnet/10.0) 后重试。
 5. 在导入向导选择 **Game Root**，选择 AC6 安装根目录或其中的 `Game` 子目录。

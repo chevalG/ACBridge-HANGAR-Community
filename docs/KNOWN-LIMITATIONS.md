@@ -18,6 +18,9 @@
 - The desktop shell requires Microsoft Edge WebView2 Runtime. Current Windows
   10/11 installations normally have it; otherwise the launcher shows the
   official runtime link instead of opening a broken window.
+- AC6 part bundles use KRAK compression. HANGAR needs the user's own
+  `oo2core_8_win64.dll` beside WitchyBND; it is not downloaded or redistributed.
+  Without it, Game Root can index animations but not player parts.
 - Closing the HANGAR window requests a graceful stop. A wedged third-party
   unpacker can delay that stop until its timeout; the launcher then terminates
   only its own child process tree.

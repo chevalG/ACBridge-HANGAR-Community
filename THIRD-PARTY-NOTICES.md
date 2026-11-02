@@ -31,6 +31,11 @@ to the official upstream release `3.0.1.0`, verifies the Windows archive hash
 and lets the user place it in HANGAR's runtime tool directory. Users are
 responsible for reviewing the upstream distribution and its Oodle terms.
 
+`oo2core_8_win64.dll` is proprietary and is never bundled or downloaded by
+HANGAR. The setup assistant can copy it from the user's own legally installed
+AC6 directory. It is required for KRAK-compressed part bundles; without it the
+Game Root import can discover animations but cannot unpack player parts.
+
 ## HANGAR desktop artwork
 
 The HANGAR desktop icon is derived from the in-game emblem artwork

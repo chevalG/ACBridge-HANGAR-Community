@@ -39,6 +39,7 @@ class ToolchainContracts(unittest.TestCase):
         status = toolchain.toolchain_status(self.app.engine)
         self.assertIn('missing', status)
         self.assertIn('dotnet', status)
+        self.assertIn('oodle_ready', status)
         self.assertIn('expanded_available', status)
         self.assertTrue(status['expanded_available'])
         self.assertTrue(status['summary'])
@@ -64,6 +65,24 @@ class ToolchainContracts(unittest.TestCase):
         # A failed attempt must not leave the single-flight lock engaged.
         retry = self.app.start_toolchain_install({})
         self.assertEqual(retry['status'], 'queued')
+
+    def test_game_dir_is_forwarded_to_the_reviewed_installer(self):
+        with patch.object(toolchain, 'installer_command',
+                          side_effect=lambda args: ['python', 'installer.py', *args]):
+            with patch.object(toolchain, 'toolchain_status', return_value={
+                    'ready': False, 'missing': ['WitchyBND'],
+                    'dotnet': {'desktop_10': True}, 'oodle_ready': False}):
+                with patch('hangar.toolchain.subprocess.run') as run:
+                    run.return_value = __import__('subprocess').CompletedProcess(
+                        [], 1, stdout='', stderr='')
+                    job = self.app.start_toolchain_install({'game_dir': 'E:/Game'})
+                    for _ in range(200):
+                        current = self.app.job(job['id'])
+                        if current['status'] in ('completed', 'failed', 'cancelled'):
+                            break
+                        __import__('time').sleep(.02)
+                    self.assertEqual(run.call_args.args[0][-2:],
+                                     ['--game-dir', 'E:/Game'])
 
 
 if __name__ == '__main__':

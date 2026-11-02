@@ -70,6 +70,9 @@ export class ResourceWizard {
               <button id="btn-pick-witchy" class="btn-icon" type="button">
                 选择已有 WitchyBND
               </button>
+              <button id="btn-pick-game-tools" class="btn-icon" type="button">
+                从 AC6 目录复用 Oodle
+              </button>
               <button id="btn-refresh-toolchain" class="btn-icon" type="button">
                 重新检测
               </button>
@@ -171,6 +174,22 @@ export class ResourceWizard {
       if (path.trim()) {
         this._witchyPath = path.trim();
         this._installToolchain(this._witchyPath);
+      }
+    });
+    this.modal.querySelector('#btn-pick-game-tools')?.addEventListener('click', async () => {
+      let path = '';
+      if (api.isConnected) {
+        try {
+          const res = await api.openDialog('folder');
+          path = res?.path || '';
+        } catch (_) { /* manual entry below */ }
+      }
+      if (!path) {
+        path = prompt('请输入 AC6 安装目录或 Game 子目录的完整路径：') || '';
+      }
+      if (path.trim()) {
+        this._gameDir = path.trim();
+        this._installToolchain('', this._gameDir);
       }
     });
 
@@ -286,10 +305,13 @@ export class ResourceWizard {
     const detail = this.modal.querySelector('#toolchain-detail');
     if (detail) {
       const dotnet = info.dotnet || {};
+      const oodle = info.oodle_ready ? '' : '缺少 oo2core_8_win64.dll（KRAK 部件包需要）';
       detail.innerHTML = ready
-        ? '<span>NuxeBridge / Nuxe 索引 / .NET 10 / WitchyBND 均已检测到。</span>'
+        ? `<span>NuxeBridge / Nuxe 索引 / .NET 10 / WitchyBND 均已检测到。</span>
+           ${oodle ? `<span>${escapeText(oodle)}</span>` : ''}`
         : `<span>${missing.map(item => `<b>${escapeText(item)}</b>`).join(' · ')}</span>
-           <span>${dotnet.desktop_10 ? '运行时版本：' + escapeText(dotnet.version || '') : '未检测到 .NET 10 Desktop Runtime'}</span>`;
+           <span>${dotnet.desktop_10 ? '运行时版本：' + escapeText(dotnet.version || '') : '未检测到 .NET 10 Desktop Runtime'}</span>
+           ${oodle ? `<span>${escapeText(oodle)}</span>` : ''}`;
     }
     const install = this.modal.querySelector('#btn-install-toolchain');
     if (install) {
@@ -304,7 +326,7 @@ export class ResourceWizard {
     }
   }
 
-  async _installToolchain(witchyPath = '') {
+  async _installToolchain(witchyPath = '', gameDir = '') {
     if (this.isInstalling) return;
     this.isInstalling = true;
     this.installMessage = '正在准备安装…';
@@ -312,7 +334,10 @@ export class ResourceWizard {
     try {
       if (!api.isConnected) await api.getHealth();
       if (!api.isConnected) throw new Error('本地服务未连接，无法安装依赖。');
-      const submitted = await api.installToolchain(witchyPath ? { witchy_path: witchyPath } : {});
+      const payload = {};
+      if (witchyPath) payload.witchy_path = witchyPath;
+      if (gameDir) payload.game_dir = gameDir;
+      const submitted = await api.installToolchain(payload);
       await api.pollJob(submitted.id, job => {
         this.installMessage = `${job.message || job.stage || '安装中…'}`;
         this._renderToolchain();

@@ -34,6 +34,10 @@ does not add AC6 reverse-engineering features.
   pinned official GitHub release and verifies SHA-256 before installation.
 - Manual WitchyBND selection and Expanded mode remain available. Missing or
   failed dependencies do not block already-usable Expanded resources.
+- AC6 part bundles are KRAK-compressed. HANGAR does not redistribute the
+  proprietary Oodle DLL; the assistant can copy `oo2core_8_win64.dll` from the
+  user's own AC6 installation. Without it, Game Root indexes animations but
+  cannot unpack player parts.
 - A failed or offline install reports the failure, writes a log, and leaves the
   UI ready for retry.
 

@@ -17,6 +17,8 @@ ACBridge HANGAR 是一个面向《装甲核心 VI：境界天火》的本地机�
 3. If the import wizard reports missing game tools, use **一键安装缺失组件**.
    It reuses the bundled Nuxe stack, obtains WitchyBND from its official GitHub
    release, verifies the pinned SHA-256, and rechecks .NET 10 Desktop Runtime.
+   For AC6's KRAK-compressed part bundles, also select **从 AC6 目录复用 Oodle**
+   so HANGAR copies `oo2core_8_win64.dll` from your own game installation.
 4. Choose **Game Root** and select either the AC6 installation folder or its
    `Game` subfolder. **Expanded** remains available without those tools.
 5. Closing the HANGAR window stops the service and child processes started by
@@ -41,6 +43,11 @@ WitchyBND is not redistributed. Its official Windows release contains a
 proprietary Oodle component, so HANGAR retrieves that release directly from the
 upstream author only when the user runs the setup assistant. See
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+HANGAR does not download or redistribute `oo2core_8_win64.dll`. If your AC6
+installation contains it, the setup assistant can copy it from your own game
+directory beside WitchyBND. That runtime is required to unpack KRAK-compressed
+part bundles.
 
 ## Main capabilities / 主要能力
 

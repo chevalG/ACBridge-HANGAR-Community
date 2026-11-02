@@ -77,7 +77,33 @@ def install_witchy_from_folder(src_folder: Path, dst_folder: Path):
             shutil.copy2(item, dst_folder / item.name)
         elif item.is_dir() and item.name in ("Assets", "lib"):
             shutil.copytree(item, dst_folder / item.name, dirs_exist_ok=True)
+    # WitchyBND needs the Oodle runtime to unpack AC6's DCX_KRAK parts.
+    # The runtime is not redistributed by HANGAR; the user supplies it from
+    # their own game installation or an existing copy beside WitchyBND.
+    for candidate in src_folder.glob("oo2core*_win64.dll"):
+        shutil.copy2(candidate, dst_folder / candidate.name)
     return (dst_folder / "WitchyBND.exe").is_file()
+
+
+def link_oodle_from_game(game_dir: Path, dst_folder: Path):
+    """Copy the user's own Oodle runtime beside WitchyBND.
+
+    Returns the copied path, or None when the game does not contain the DLL.
+    HANGAR never downloads or redistributes this proprietary component.
+    """
+    game_dir = Path(game_dir)
+    candidates = [
+        game_dir / "oo2core_8_win64.dll",
+        game_dir / "Game" / "oo2core_8_win64.dll",
+    ]
+    for candidate in candidates:
+        if candidate.is_file():
+            dst_folder.mkdir(parents=True, exist_ok=True)
+            target = dst_folder / candidate.name
+            if not target.is_file() or target.stat().st_size != candidate.stat().st_size:
+                shutil.copy2(candidate, target)
+            return target
+    return None
 
 
 def download_and_extract_witchy(dst_folder: Path):
@@ -156,6 +182,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--witchy-path", type=str, help="指定已解压的 WitchyBND 目录或 WitchyBND.exe 完整路径")
     parser.add_argument("--auto-download", action="store_true", help="若未在本地找到 WitchyBND，自动从 GitHub 下载")
+    parser.add_argument("--game-dir", type=str, help="从用户合法安装的 AC6 目录复用 oo2core Oodle 运行时")
     args = parser.parse_args(argv)
 
     print("==================================================")
@@ -163,7 +190,7 @@ def main(argv=None):
     print("==================================================")
 
     current = probe_toolchain()
-    if current["ready"]:
+    if current["ready"] and not args.game_dir:
         print("\n[OK] 本地解包工具链已完整就绪：")
         print(f"  - NuxeBridge: {current['nuxe_bridge']}")
         print(f"  - Nuxe 资源索引: {current['nuxe_res']}")
@@ -212,6 +239,14 @@ def main(argv=None):
     if not dotnet_desktop_10_ready():
         print("\n[缺少运行时] 安装 Microsoft .NET 10 Desktop Runtime 后才能使用 Game Root：")
         print(f"  {DOTNET_DESKTOP_DOWNLOAD_URL}")
+
+    if args.game_dir:
+        copied = link_oodle_from_game(Path(args.game_dir), dst_witchy)
+        if copied:
+            print(f"\n[OK] 已从用户游戏目录复用 Oodle 运行时: {copied}")
+        else:
+            print("\n[提示] 未在指定游戏目录找到 oo2core_8_win64.dll；"
+                  "KRAK 压缩的部件包将无法解包。")
 
     after = probe_toolchain()
     if after["ready"]:

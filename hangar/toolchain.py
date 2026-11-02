@@ -85,12 +85,20 @@ def toolchain_status(engine):
         (ROOT / 'runtime' / 'tools' / 'nuxe' / 'NuxeBridge.exe').is_file()
     )
     info['witchy_path'] = info.get('witchy')
+    oodle = ROOT / 'runtime' / 'tools' / 'witchy' / 'oo2core_8_win64.dll'
+    info['oodle_ready'] = oodle.is_file()
     info['expanded_available'] = True
-    info['summary'] = (
-        '解包组件已就绪，可直接选择 AC6 游戏目录。'
-        if info['ready'] else
-        '缺少：' + '、'.join(info['missing']) + '。可一键安装，或改用已展开资源目录。'
-    )
+    if info['ready'] and not info['oodle_ready']:
+        info['summary'] = (
+            'WitchyBND 已就绪，但缺少 Oodle 运行时。KRAK 压缩的部件包需要 '
+            'oo2core_8_win64.dll；可从你的 AC6 安装目录复用。'
+        )
+    elif info['ready']:
+        info['summary'] = '解包组件已就绪，可直接选择 AC6 游戏目录。'
+    else:
+        info['summary'] = (
+            '缺少：' + '、'.join(info['missing']) +
+            '。可一键安装，或改用已展开资源目录。')
     return info
 
 
@@ -124,6 +132,7 @@ class ToolchainInstaller:
             job = self.app.jobs.create('toolchain-install', {
                 'mode': 'auto',
                 'witchy_path': payload.get('witchy_path'),
+                'game_dir': payload.get('game_dir'),
             })
             self.app.jobs.submit(job['id'], lambda jid: self._run(jid, payload))
             return job
@@ -148,6 +157,8 @@ class ToolchainInstaller:
             args = ['--auto-download']
             if payload.get('witchy_path'):
                 args.extend(['--witchy-path', str(payload['witchy_path'])])
+            if payload.get('game_dir'):
+                args.extend(['--game-dir', str(payload['game_dir'])])
             self.app.jobs.update(
                 job_id, stage='download', progress=20,
                 message='正在从官方来源下载并校验 WitchyBND；如已安装则直接复用…')
@@ -166,7 +177,7 @@ class ToolchainInstaller:
                 )
 
             after = self.status()
-            if after['ready']:
+            if after['ready'] and after.get('oodle_ready'):
                 self.app.jobs.update(
                     job_id, status='completed', stage='completed', progress=100,
                     message='依赖已安装并重新检测通过。', result={
@@ -177,6 +188,15 @@ class ToolchainInstaller:
                     'installer_exit',
                     f'依赖安装助手异常退出（{proc.returncode}）。请查看日志后重试。',
                     500, {'log': str(log_path)})
+            elif after['ready'] and not after.get('oodle_ready'):
+                message = (
+                    'WitchyBND 已安装，但缺少 oo2core_8_win64.dll。'
+                    '请选择 AC6 游戏目录，以便从你的合法安装中复用该 Oodle 运行时。')
+                self.app.jobs.update(
+                    job_id, status='failed', stage='needs_oodle', progress=100,
+                    message=message, finished_at=_now(),
+                    error={'code': 'oodle_required', 'message': message,
+                           'details': {'toolchain': after, 'log': str(log_path)}})
             else:
                 missing = after.get('missing') or []
                 message = '依赖仍未就绪：' + '、'.join(missing)
